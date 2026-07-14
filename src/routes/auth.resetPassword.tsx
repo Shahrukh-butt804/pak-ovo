@@ -1,32 +1,35 @@
-import { createFileRoute, Link, useNavigate } from "@/lib/router-compat";
-import { useState } from "react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import logo from "@/assets/logo.png";
-import { useLoginMutation } from "@/redux/services/authSlice";
-import { setUser } from "@/redux/reducers/userSlice";
-import { useDispatch } from "react-redux";
+import { Button } from "@/components/ui/button";
+import { createFileRoute, Link } from "@/lib/router-compat";
+import { useResetPasswordMutation } from "@/redux/services/authSlice";
+import { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
-export const Route = createFileRoute("/auth/login")({
-  head: () => ({ meta: [{ title: "Sign in — PakOvo" }, { name: "robots", content: "noindex" }] }),
-  component: Login,
+export const Route = createFileRoute("/auth/reset-password")({
+  head: () => ({
+    meta: [{ title: "Reset Password — PakOvo" }, { name: "robots", content: "noindex" }],
+  }),
+  component: ResetPassword,
 });
 
-function Login() {
-  const dispatch = useDispatch();
+function ResetPassword() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const location = useLocation();
+  const { email, otp } = location.state || {};
+
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
-  const [login, { isLoading }] = useLoginMutation();
+  const [resetPassword, { isLoading }] = useResetPasswordMutation();
 
   const validate = () => {
     const e: typeof errors = {};
-    if (!email.trim()) e.email = "Email is required";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = "Enter a valid email";
-    if (!password) e.password = "Password is required";
+    if (!password.trim()) e.password = "Password is required";
     else if (password.length < 6) e.password = "Password must be at least 6 characters";
+    if (password !== confirmPassword) e.password = "Passwords do not match";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -38,14 +41,11 @@ function Login() {
       return;
     }
 
-    const res: any = await login({ email, password });
+    const res: any = await resetPassword({ email, otp: Number(otp), password });
 
     if (res?.data?.success) {
-      dispatch(
-      setUser({ ...res?.data?.data?.user, token: res?.data?.data?.accessToken }),
-    );
       toast.success(res?.data?.message || "Operation successful");
-      navigate({ to: "/account" });
+      navigate("/auth/login");
     } else {
       toast.error(
         res?.error?.data?.message || res?.error?.data?.errors[0].msg || "something went wrong",
@@ -56,50 +56,41 @@ function Login() {
   return (
     <div className="container-px mx-auto flex max-w-md flex-col items-center py-16">
       <img src={logo} alt="PakOvo" className="h-16 w-16 object-contain" />
-      <h1 className="mt-4 font-display text-3xl font-bold">Welcome back</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Sign in to your PakOvo account</p>
+      <h1 className="mt-4 font-display text-3xl font-bold">Reset Password</h1>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Enter your new password and confirm it to reset your account password.
+      </p>
 
       <form className="mt-8 w-full space-y-3" onSubmit={onSubmit} noValidate>
         <Field
-          label="Email"
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          error={errors.email}
-          autoComplete="email"
-        />
-        <Field
-          label="Password"
+          label="New Password"
           type="password"
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           error={errors.password}
-          autoComplete="current-password"
+          autoComplete="new-password"
         />
+        <Field
+          label="Confirm Password"
+          type="password"
+          required
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          error={errors.password}
+          autoComplete="new-password"
+        />
+
         <div className="flex justify-end">
-          <Link to="/auth/forget-password" className="text-xs font-medium text-brand hover:underline">
-            Forgot password?
+          <Link to="/auth/login" className="text-xs font-medium text-brand hover:underline">
+            Back to Login
           </Link>
         </div>
-        <Button
-          disabled={isLoading}
-          variant="hero"
-          size="lg"
-          className="w-full"
-          type="submit"
-        >
-          Sign in
+
+        <Button disabled={isLoading} variant="hero" size="lg" className="w-full" type="submit">
+          Reset Password
         </Button>
       </form>
-
-      <p className="mt-8 text-sm text-muted-foreground">
-        New to PakOvo?{" "}
-        <Link to="/auth/register" className="font-semibold text-brand hover:underline">
-          Create account
-        </Link>
-      </p>
     </div>
   );
 }

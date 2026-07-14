@@ -6,14 +6,20 @@ import { useWishlist } from "@/lib/wishlist-store";
 import { MegaMenu } from "./MegaMenu";
 import { categories } from "@/data/categories";
 import logo from "@/assets/logo.png";
+import { useDispatch, useSelector } from "react-redux";
+import { logout, selectUser } from "@/redux/reducers/userSlice";
+import { Button } from "../ui/button";
 
 export function Header() {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const setCartOpen = useCart((s) => s.setOpen);
   const cartCount = useCart((s) => s.lines.reduce((n, l) => n + l.qty, 0));
   const wishCount = useWishlist((s) => s.ids.length);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [q, setQ] = useState("");
+
+  const username = useSelector(selectUser)?.fullName;
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,10 +32,28 @@ export function Header() {
     <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur-xl">
       <div className="bg-navy text-navy-foreground">
         <div className="container-px mx-auto flex h-9 max-w-7xl items-center justify-between text-xs">
-          <span className="hidden sm:inline">Free shipping over Rs 5,000 · 30-day easy returns</span>
+          <span className="hidden sm:inline">
+            Free shipping over Rs 5,000 · 30-day easy returns
+          </span>
           <div className="flex items-center gap-4">
-            <Link to="/account" className="hover:text-gold transition-colors">My Account</Link>
-            <Link to="/auth/login" className="hover:text-gold transition-colors">Sign in</Link>
+            <Link to="/account" className="hover:text-gold transition-colors">
+              My Account
+            </Link>
+            {username ? (
+              <>
+                <Button 
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  dispatch(logout());
+                }}
+                >Logout</Button>
+              </>
+            ) : (
+              <Link to="/auth/login" className="hover:text-gold transition-colors">
+                Sign in
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -44,7 +68,13 @@ export function Header() {
         </button>
 
         <Link to="/" className="flex items-center gap-2">
-          <img src={logo} alt="PakOvo" width={44} height={44} className="h-11 w-11 object-contain" />
+          <img
+            src={logo}
+            alt="PakOvo"
+            width={44}
+            height={44}
+            className="h-11 w-11 object-contain"
+          />
           <span className="hidden font-display text-lg font-bold tracking-tight sm:inline">
             <span className="text-brand">Pak</span>
             <span className="text-navy">Ovo</span>
@@ -63,10 +93,18 @@ export function Header() {
         </form>
 
         <nav className="ml-auto flex items-center gap-1 lg:ml-2">
-          <Link to="/search" aria-label="Search" className="lg:hidden p-2 hover:text-brand transition-colors">
+          <Link
+            to="/search"
+            aria-label="Search"
+            className="lg:hidden p-2 hover:text-brand transition-colors"
+          >
             <Search className="h-5 w-5" />
           </Link>
-          <Link to="/wishlist" aria-label="Wishlist" className="relative p-2 hover:text-brand transition-colors">
+          <Link
+            to="/wishlist"
+            aria-label="Wishlist"
+            className="relative p-2 hover:text-brand transition-colors"
+          >
             <Heart className="h-5 w-5" />
             {wishCount > 0 && (
               <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-bold text-gold-foreground">
@@ -74,7 +112,11 @@ export function Header() {
               </span>
             )}
           </Link>
-          <Link to="/account" aria-label="Account" className="hidden p-2 hover:text-brand transition-colors sm:block">
+          <Link
+            to="/account"
+            aria-label="Account"
+            className="hidden p-2 hover:text-brand transition-colors sm:block"
+          >
             <User className="h-5 w-5" />
           </Link>
           <button
@@ -94,7 +136,9 @@ export function Header() {
 
       <div className="hidden border-t border-border lg:block">
         <div className="container-px mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-6 gap-y-2 py-3 text-sm font-medium xl:gap-x-8">
-          <Link to="/" className="hover:text-brand transition-colors">Home</Link>
+          <Link to="/" className="hover:text-brand transition-colors">
+            Home
+          </Link>
           <div className="group relative">
             <Link to="/shop" className="flex items-center gap-1 hover:text-brand transition-colors">
               Shop
@@ -111,8 +155,14 @@ export function Header() {
               {c.name}
             </Link>
           ))}
-          <Link to="/blog" className="hover:text-brand transition-colors">Journal</Link>
-          <Link to="/shop" search={{ filter: "sale" }} className="text-destructive font-semibold hover:opacity-80 transition-opacity">
+          <Link to="/blog" className="hover:text-brand transition-colors">
+            Journal
+          </Link>
+          <Link
+            to="/shop"
+            search={{ filter: "sale" }}
+            className="text-destructive font-semibold hover:opacity-80 transition-opacity"
+          >
             Sale
           </Link>
         </div>
@@ -126,7 +176,8 @@ export function Header() {
               <Link to="/" onClick={() => setMobileOpen(false)} className="flex items-center gap-2">
                 <img src={logo} alt="PakOvo" className="h-10 w-10 object-contain" />
                 <span className="font-display text-lg font-bold">
-                  <span className="text-brand">Pak</span><span className="text-navy">Ovo</span>
+                  <span className="text-brand">Pak</span>
+                  <span className="text-navy">Ovo</span>
                 </span>
               </Link>
               <button aria-label="Close" onClick={() => setMobileOpen(false)} className="p-2">
@@ -144,8 +195,12 @@ export function Header() {
               />
             </form>
             <nav className="space-y-1">
-              <MobileLink to="/" onClick={() => setMobileOpen(false)}>Home</MobileLink>
-              <MobileLink to="/shop" onClick={() => setMobileOpen(false)}>Shop all</MobileLink>
+              <MobileLink to="/" onClick={() => setMobileOpen(false)}>
+                Home
+              </MobileLink>
+              <MobileLink to="/shop" onClick={() => setMobileOpen(false)}>
+                Shop all
+              </MobileLink>
               {categories.map((c) => (
                 <Link
                   key={c.slug}
@@ -157,9 +212,15 @@ export function Header() {
                   {c.name}
                 </Link>
               ))}
-              <MobileLink to="/wishlist" onClick={() => setMobileOpen(false)}>Wishlist</MobileLink>
-              <MobileLink to="/blog" onClick={() => setMobileOpen(false)}>Journal</MobileLink>
-              <MobileLink to="/account" onClick={() => setMobileOpen(false)}>My account</MobileLink>
+              <MobileLink to="/wishlist" onClick={() => setMobileOpen(false)}>
+                Wishlist
+              </MobileLink>
+              <MobileLink to="/blog" onClick={() => setMobileOpen(false)}>
+                Journal
+              </MobileLink>
+              <MobileLink to="/account" onClick={() => setMobileOpen(false)}>
+                My account
+              </MobileLink>
             </nav>
           </div>
         </div>
@@ -168,9 +229,21 @@ export function Header() {
   );
 }
 
-function MobileLink({ to, onClick, children }: { to: string; onClick: () => void; children: React.ReactNode }) {
+function MobileLink({
+  to,
+  onClick,
+  children,
+}: {
+  to: string;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
   return (
-    <Link to={to} onClick={onClick} className="block rounded-lg px-3 py-3 text-base font-medium hover:bg-secondary">
+    <Link
+      to={to}
+      onClick={onClick}
+      className="block rounded-lg px-3 py-3 text-base font-medium hover:bg-secondary"
+    >
       {children}
     </Link>
   );

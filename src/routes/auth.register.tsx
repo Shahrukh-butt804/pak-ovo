@@ -3,9 +3,12 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/logo.png";
+import { useSignupMutation } from "@/redux/services/authSlice";
 
 export const Route = createFileRoute("/auth/register")({
-  head: () => ({ meta: [{ title: "Create account — PakOvo" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({
+    meta: [{ title: "Create account — PakOvo" }, { name: "robots", content: "noindex" }],
+  }),
   component: Register,
 });
 
@@ -13,6 +16,7 @@ function Register() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string }>({});
+  const [signup, { isLoading }] = useSignupMutation();
 
   const validate = () => {
     const e: typeof errors = {};
@@ -26,11 +30,24 @@ function Register() {
     return Object.keys(e).length === 0;
   };
 
-  const onSubmit = (ev: React.FormEvent) => {
+  const onSubmit = async (ev: React.FormEvent) => {
     ev.preventDefault();
-    if (!validate()) { toast.error("Please fix the errors below"); return; }
-    toast.success("Account created — welcome to PakOvo!");
-    navigate({ to: "/account" });
+    if (!validate()) {
+      toast.error("Please fix the errors below");
+      return;
+    }
+
+    const { name, email, password } = form;
+    const res: any = await signup({ fullName: name, email, password });
+
+    if (res?.data?.success) {
+      toast.success(res?.data?.message || "Operation successful");
+      navigate({ to: "/account" });
+    } else {
+      toast.error(
+        res?.error?.data?.message || res?.error?.data?.errors[0].msg || "something went wrong",
+      );
+    }
   };
 
   return (
@@ -40,24 +57,58 @@ function Register() {
       <p className="mt-1 text-sm text-muted-foreground">Join PakOvo and unlock 10% off</p>
 
       <form className="mt-8 w-full space-y-3" onSubmit={onSubmit} noValidate>
-        <Field label="Full name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} error={errors.name} autoComplete="name" />
-        <Field label="Email" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} error={errors.email} autoComplete="email" />
-        <Field label="Password" type="password" required value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} error={errors.password} autoComplete="new-password" />
-        <Button variant="hero" size="lg" className="w-full" type="submit">Create account</Button>
+        <Field
+          label="Full name"
+          required
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          error={errors.name}
+          autoComplete="name"
+        />
+        <Field
+          label="Email"
+          type="email"
+          required
+          value={form.email}
+          onChange={(e) => setForm({ ...form, email: e.target.value })}
+          error={errors.email}
+          autoComplete="email"
+        />
+        <Field
+          label="Password"
+          type="password"
+          required
+          value={form.password}
+          onChange={(e) => setForm({ ...form, password: e.target.value })}
+          error={errors.password}
+          autoComplete="new-password"
+        />
+        <Button disabled={isLoading} variant="hero" size="lg" className="w-full" type="submit">
+          Create account
+        </Button>
       </form>
 
       <p className="mt-8 text-sm text-muted-foreground">
-        Already have an account? <Link to="/auth/login" className="font-semibold text-brand hover:underline">Sign in</Link>
+        Already have an account?{" "}
+        <Link to="/auth/login" className="font-semibold text-brand hover:underline">
+          Sign in
+        </Link>
       </p>
     </div>
   );
 }
 
-function Field({ label, error, required, ...rest }: React.InputHTMLAttributes<HTMLInputElement> & { label: string; error?: string }) {
+function Field({
+  label,
+  error,
+  required,
+  ...rest
+}: React.InputHTMLAttributes<HTMLInputElement> & { label: string; error?: string }) {
   return (
     <label className="block">
       <span className="mb-1 block text-xs font-medium text-muted-foreground">
-        {label}{required && <span className="ml-0.5 text-destructive">*</span>}
+        {label}
+        {required && <span className="ml-0.5 text-destructive">*</span>}
       </span>
       <input
         {...rest}
