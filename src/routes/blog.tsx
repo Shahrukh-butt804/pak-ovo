@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@/lib/router-compat";
 import { useAdmin } from "@/lib/admin-store";
 
 export const Route = createFileRoute("/blog")({

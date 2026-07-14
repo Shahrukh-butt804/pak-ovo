@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@/lib/router-compat";
 import { useWishlist } from "@/lib/wishlist-store";
 import { products } from "@/data/products";
 import { ProductGrid } from "@/components/product/ProductCard";

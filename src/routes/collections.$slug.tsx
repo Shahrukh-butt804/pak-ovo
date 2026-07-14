@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound } from "@/lib/router-compat";
 import { useMemo, useState } from "react";
 import { findCategory } from "@/data/categories";
 import { productsByCategory } from "@/data/products";
@@ -6,12 +6,12 @@ import { ProductGrid } from "@/components/product/ProductCard";
 import { ChevronDown } from "lucide-react";
 
 export const Route = createFileRoute("/collections/$slug")({
-  loader: ({ params }) => {
+  loader: ({ params }: any) => {
     const cat = findCategory(params.slug);
     if (!cat) throw notFound();
     return { cat };
   },
-  head: ({ loaderData }) => {
+  head: ({ loaderData }: any) => {
     const c = loaderData?.cat;
     return {
       meta: [

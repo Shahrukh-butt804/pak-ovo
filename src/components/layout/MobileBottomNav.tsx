@@ -1,9 +1,9 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState } from "@/lib/router-compat";
 import { Home, Search, ShoppingBag, Heart, User } from "lucide-react";
 import { useCart } from "@/lib/cart-store";
 
 export function MobileBottomNav() {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const pathname = useRouterState({ select: (s: any) => s.location.pathname });
   const setCartOpen = useCart((s) => s.setOpen);
   const cartCount = useCart((s) => s.lines.reduce((n, l) => n + l.qty, 0));
 

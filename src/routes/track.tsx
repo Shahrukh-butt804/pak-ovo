@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from "@/lib/router-compat";
 import { useState } from "react";
 import { Search, Package, Truck, MapPin, CheckCircle2, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";

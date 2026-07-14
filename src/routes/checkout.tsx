@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@/lib/router-compat";
 import { useState } from "react";
 import { CheckCircle2, Lock, ShoppingBag, Truck, CreditCard } from "lucide-react";
 import { useCart, cartTotals } from "@/lib/cart-store";

@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useNavigate } from "@/lib/router-compat";
 import { useState } from "react";
 import { Heart, Minus, Plus, ShoppingBag, Star, Truck, RotateCcw, ShieldCheck } from "lucide-react";
 import { findProduct, relatedProducts } from "@/data/products";
@@ -11,12 +11,12 @@ import { ProductGrid } from "@/components/product/ProductCard";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/products/$slug")({
-  loader: ({ params }) => {
+  loader: ({ params }: any) => {
     const product = findProduct(params.slug);
     if (!product) throw notFound();
     return { product, related: relatedProducts(product, 4), cat: findCategory(product.category)! };
   },
-  head: ({ loaderData }) => {
+  head: ({ loaderData }: any) => {
     const p = loaderData?.product;
     if (!p) return { meta: [] };
     return {

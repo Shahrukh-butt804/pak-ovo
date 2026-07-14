@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link } from "@/lib/router-compat";
 import { categories } from "@/data/categories";
 
 interface MegaMenuProps {

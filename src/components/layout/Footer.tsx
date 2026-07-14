@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link } from "@/lib/router-compat";
 import { Facebook, Instagram, Youtube } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { categories } from "@/data/categories";

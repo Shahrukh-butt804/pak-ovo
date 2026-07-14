@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link } from "@/lib/router-compat";
 import { Heart, ShoppingBag, Star } from "lucide-react";
 import { type Product } from "@/data/products";
 import { categoryFallbackImage } from "@/data/products";
