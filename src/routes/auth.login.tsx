@@ -38,7 +38,7 @@ function Login() {
       return;
     }
 
-    const res: any = await login({ email, password });
+    const res: any = await login({ email, password , role: "user" });
 
     if (res?.data?.success) {
       dispatch(

@@ -1,6 +1,5 @@
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
-import { useEffect, type ReactNode } from "react";
-import { RouteRenderer } from "@/lib/router-compat";
+import { useEffect, type ComponentType } from "react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
@@ -30,6 +29,7 @@ import { Route as ResetPasswordRoute } from "@/routes/auth.resetPassword";
 import Cookies from "js-cookie";
 import { jwtDecode } from "jwt-decode";
 import { Provider, useDispatch, useSelector } from "react-redux";
+import { toast } from "sonner";
 import { logout, selectUser } from "./redux/reducers/userSlice";
 import { store } from "./redux/store";
 
@@ -62,19 +62,28 @@ interface JwtPayload {
   [key: string]: any;
 }
 
-function PrivateRoute({ children }: { children: ReactNode }) {
+type RouteModule = {
+  _config: {
+    component: ComponentType;
+  };
+};
+
+function renderRoute(route: RouteModule) {
+  const Component = route._config.component;
+  return <Component />;
+}
+
+function PrivateRoute({ children }: { children: React.ReactNode }) {
   const dispatch = useDispatch();
   const location = useLocation();
   const user = useSelector(selectUser);
   const token = Cookies.get("accessToken") || user?.token || null;
 
-  useEffect(() => {
-    if (!token) {
-      dispatch(logout());
-    }
-  }, [dispatch, location.pathname, token]);
-
   if (!token) {
+    dispatch(logout());
+    Cookies.remove("accessToken");
+    Cookies.remove("refreshToken");
+    toast.error("Please login to continue.");
     return <Navigate to="/auth/login" replace state={{ from: location }} />;
   }
 
@@ -86,6 +95,7 @@ function PrivateRoute({ children }: { children: ReactNode }) {
     dispatch(logout());
     Cookies.remove("accessToken");
     Cookies.remove("refreshToken");
+    toast.error("Your session is invalid. Please login again.");
     return <Navigate to="/auth/login" replace state={{ from: location }} />;
   }
 
@@ -94,6 +104,7 @@ function PrivateRoute({ children }: { children: ReactNode }) {
     dispatch(logout());
     Cookies.remove("accessToken");
     Cookies.remove("refreshToken");
+    toast.error("Session expired. Please login again.");
     return <Navigate to="/auth/login" replace state={{ from: location }} />;
   }
 
@@ -108,24 +119,24 @@ export function App() {
       <Header />
       <main className="min-h-[60vh] pb-20 lg:pb-0">
         <Routes>
-          <Route path="/" element={<RouteRenderer route={IndexRoute} />} />
-          <Route path="/shop" element={<RouteRenderer route={ShopRoute} />} />
-          <Route path="/search" element={<RouteRenderer route={SearchRoute} />} />
-          <Route path="/cart" element={<RouteRenderer route={CartRoute} />} />
-          <Route path="/wishlist" element={<RouteRenderer route={WishlistRoute} />} />
-          <Route path="/checkout" element={<PrivateRoute><RouteRenderer route={CheckoutRoute} /></PrivateRoute>} />
-          <Route path="/track" element={<PrivateRoute><RouteRenderer route={TrackRoute} /></PrivateRoute>} />
-          <Route path="/account" element={<PrivateRoute><RouteRenderer route={AccountRoute} /></PrivateRoute>} />
-          <Route path="/admin" element={<PrivateRoute><RouteRenderer route={AdminRoute} /></PrivateRoute>} />
-          <Route path="/blog" element={<RouteRenderer route={BlogRoute} />} />
-          <Route path="/blog/:slug" element={<RouteRenderer route={BlogSlugRoute} />} />
-          <Route path="/auth/login" element={<RouteRenderer route={LoginRoute} />} />
-          <Route path="/auth/forget-password" element={<RouteRenderer route={ForgetPasswordRoute} />} />
-          <Route path="/auth/verify-otp" element={<RouteRenderer route={VerifyOtpRoute} />} />
-          <Route path="/auth/reset-password" element={<RouteRenderer route={ResetPasswordRoute} />} />
-          <Route path="/auth/register" element={<RouteRenderer route={RegisterRoute} />} />
-          <Route path="/collections/:slug" element={<RouteRenderer route={CollectionsSlugRoute} />} />
-          <Route path="/products/:slug" element={<RouteRenderer route={ProductSlugRoute} />} />
+          <Route path="/" element={renderRoute(IndexRoute)} />
+          <Route path="/shop" element={renderRoute(ShopRoute)} />
+          <Route path="/search" element={renderRoute(SearchRoute)} />
+          <Route path="/cart" element={renderRoute(CartRoute)} />
+          <Route path="/wishlist" element={renderRoute(WishlistRoute)} />
+          <Route path="/checkout" element={<PrivateRoute>{renderRoute(CheckoutRoute)}</PrivateRoute>} />
+          <Route path="/track" element={<PrivateRoute>{renderRoute(TrackRoute)}</PrivateRoute>} />
+          <Route path="/account" element={<PrivateRoute>{renderRoute(AccountRoute)}</PrivateRoute>} />
+          <Route path="/admin" element={renderRoute(AdminRoute)} />
+          <Route path="/blog" element={renderRoute(BlogRoute)} />
+          <Route path="/blog/:slug" element={renderRoute(BlogSlugRoute)} />
+          <Route path="/auth/login" element={renderRoute(LoginRoute)} />
+          <Route path="/auth/forget-password" element={renderRoute(ForgetPasswordRoute)} />
+          <Route path="/auth/verify-otp" element={renderRoute(VerifyOtpRoute)} />
+          <Route path="/auth/reset-password" element={renderRoute(ResetPasswordRoute)} />
+          <Route path="/auth/register" element={renderRoute(RegisterRoute)} />
+          <Route path="/collections/:slug" element={renderRoute(CollectionsSlugRoute)} />
+          <Route path="/products/:slug" element={renderRoute(ProductSlugRoute)} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>

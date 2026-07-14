@@ -1,23 +1,47 @@
-import { createFileRoute, Link } from "@/lib/router-compat";
-import { useMemo, useRef, useState } from "react";
-import {
-  LayoutDashboard, Package, ShoppingCart, Users, Tag, BarChart3, Settings,
-  FileText, Image as ImageIcon, Megaphone, Star, Plus, Trash2, Pencil, Download,
-  Upload, Search, X, FileDown, RefreshCw,
-} from "lucide-react";
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
-import { toast } from "sonner";
+import catFallback from "@/assets/cat-cosmetics.jpg";
 import { Button } from "@/components/ui/button";
 import { categories, type CategorySlug } from "@/data/categories";
-import { formatPrice } from "@/lib/format";
 import {
-  useAdmin, parseCsv, validateProductRows, productCsvTemplate,
-  type AdminProduct, type AdminOrder, type AdminCategory, type BlogPost,
+  parseCsv,
+  productCsvTemplate,
+  useAdmin,
+  validateProductRows,
+  type AdminCategory,
+  type AdminOrder,
+  type AdminProduct,
+  type BlogPost,
 } from "@/lib/admin-store";
-import { useAdminAuth } from "@/lib/auth-store";
+import { formatPrice } from "@/lib/format";
+import { createFileRoute, Link, useNavigate } from "@/lib/router-compat";
 import { cn } from "@/lib/utils";
-import catFallback from "@/assets/cat-cosmetics.jpg";
+import { logout, selectUser, setUser } from "@/redux/reducers/userSlice";
+import { useLoginMutation } from "@/redux/services/authSlice";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import {
+  BarChart3,
+  Download,
+  FileDown,
+  FileText, Image as ImageIcon,
+  LayoutDashboard,
+  Megaphone,
+  Package,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Search,
+  Settings,
+  ShoppingCart,
+  Star,
+  Tag,
+  Trash2,
+  Upload,
+  Users,
+  X,
+} from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — PakOvo" }, { name: "robots", content: "noindex" }] }),
@@ -25,26 +49,32 @@ export const Route = createFileRoute("/admin")({
 });
 
 function AdminGate() {
-  const user = useAdminAuth((s) => s.user);
-  if (!user) return <AdminLogin />;
+  const user = useSelector(selectUser)
+  if (!user || user.role !== "admin") return <AdminLogin />;
   return <Admin />;
 }
 
 function AdminLogin() {
-  const login = useAdminAuth((s) => s.login);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [err, setErr] = useState<string | null>(null);
+  const [login, { isLoading }] = useLoginMutation();
 
-  const onSubmit = (e: React.FormEvent) => {
+  
+
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = login(email, password);
-    if (!res.ok) {
-      setErr(res.error);
-      toast.error(res.error);
+    const res: any = await login({ email, password, role: "admin" });
+
+    if (res?.data?.success) {
+      dispatch(setUser({ ...res?.data?.data?.user, token: res?.data?.data?.accessToken }));
+      toast.success(res?.data?.message || "Operation successful");
+      navigate({ to: "/admin" });
     } else {
-      setErr(null);
-      toast.success("Welcome back");
+      toast.error(
+        res?.error?.data?.message || res?.error?.data?.errors[0].msg || "something went wrong",
+      );
     }
   };
 
@@ -77,13 +107,8 @@ function AdminLogin() {
               className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
             />
           </div>
-          {err && <p className="text-sm text-destructive">{err}</p>}
-          <Button type="submit" variant="hero" size="lg" className="w-full">Sign in</Button>
-          <div className="rounded-md border border-dashed border-border bg-surface p-3 text-xs text-muted-foreground">
-            <p className="font-semibold text-foreground">Demo credentials</p>
-            <p>admin@pakovo.com / Admin@123</p>
-            <p>manager@pakovo.com / Manager@123</p>
-          </div>
+          <Button disabled={isLoading} type="submit" variant="hero" size="lg" className="w-full">Sign in</Button>
+      
         </form>
       </div>
     </div>
@@ -108,9 +133,10 @@ const nav: { key: View; icon: any; label: string }[] = [
 ];
 
 function Admin() {
+  const dispatch = useDispatch();
   const [view, setView] = useState<View>("dashboard");
   const [mobileNav, setMobileNav] = useState(false);
-  const { user, logout } = useAdminAuth();
+  const user = useSelector(selectUser)
 
   return (
     <div className="container-px mx-auto max-w-7xl py-8">
@@ -128,7 +154,10 @@ function Admin() {
           <button onClick={() => setMobileNav(true)} className="lg:hidden rounded-md border border-border px-3 py-2 text-sm">Menu</button>
           <Link to="/" className="hidden text-sm text-muted-foreground hover:text-foreground sm:inline">← Back to site</Link>
           <button
-            onClick={() => { logout(); toast.success("Signed out"); }}
+            onClick={() => {
+              dispatch(logout());
+              toast.success("Signed out");
+            }}
             className="rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
           >
             Sign out

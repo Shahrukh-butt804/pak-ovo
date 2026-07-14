@@ -7,8 +7,11 @@ import { MegaMenu } from "./MegaMenu";
 import { categories } from "@/data/categories";
 import logo from "@/assets/logo.png";
 import { useDispatch, useSelector } from "react-redux";
-import { logout, selectUser } from "@/redux/reducers/userSlice";
+import {  logout, selectUser } from "@/redux/reducers/userSlice";
 import { Button } from "../ui/button";
+import { toast } from "sonner";
+import { useLogoutMutation } from "@/redux/services/authSlice";
+
 
 export function Header() {
   const dispatch = useDispatch();
@@ -19,6 +22,9 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [q, setQ] = useState("");
 
+    const [logoutuser, { isLoading }] = useLogoutMutation();
+  
+
   const username = useSelector(selectUser)?.fullName;
 
   const submit = (e: React.FormEvent) => {
@@ -26,6 +32,22 @@ export function Header() {
     if (!q.trim()) return;
     navigate({ to: "/search", search: { q } });
     setMobileOpen(false);
+  };
+
+    const handleLogout = async (ev: React.FormEvent) => {
+    ev.preventDefault();
+ 
+    const res: any = await logoutuser({});
+
+    if (res?.data?.success) {
+      dispatch(logout());
+      toast.success(res?.data?.message || "Operation successful");
+      navigate({ to: "/account" });
+    } else {
+      toast.error(
+        res?.error?.data?.message || res?.error?.data?.errors[0].msg || "something went wrong",
+      );
+    }
   };
 
   return (
@@ -36,17 +58,15 @@ export function Header() {
             Free shipping over Rs 5,000 · 30-day easy returns
           </span>
           <div className="flex items-center gap-4">
+            {username ? (
+              <>
             <Link to="/account" className="hover:text-gold transition-colors">
               My Account
             </Link>
-            {username ? (
-              <>
                 <Button 
                 size="sm"
                 variant="ghost"
-                onClick={() => {
-                  dispatch(logout());
-                }}
+                onClick={handleLogout}
                 >Logout</Button>
               </>
             ) : (
