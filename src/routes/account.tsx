@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@/lib/router-compat";
+import { selectUser } from "@/redux/reducers/userSlice";
 import { Package, MapPin, CreditCard, Heart, Bell, LogOut, User, Award } from "lucide-react";
+import { useSelector } from "react-redux";
 
 export const Route = createFileRoute("/account")({
   head: () => ({ meta: [{ title: "My account — PakOvo" }, { name: "robots", content: "noindex" }] }),
@@ -16,6 +18,9 @@ const tiles = [
 ];
 
 function Account() {
+  const username = useSelector(selectUser)?.fullName;
+
+
   return (
     <div className="container-px mx-auto max-w-7xl py-10">
       <div className="rounded-3xl bg-navy p-8 text-navy-foreground md:p-12">
@@ -25,7 +30,7 @@ function Account() {
           </div>
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-gold">Welcome back</p>
-            <h1 className="font-display text-2xl font-bold md:text-3xl">Hello, Sara</h1>
+            <h1 className="font-display text-2xl font-bold md:text-3xl">Hello, {username || "User"}</h1>
           </div>
         </div>
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
