@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { UPLOADS_URL } from "@/constants/api";
-import { useCart } from "@/lib/cart-store";
 import { formatPrice } from "@/lib/format";
 import { createFileRoute, Link, useNavigate } from "@/lib/router-compat";
 import { cn } from "@/lib/utils";
@@ -35,7 +34,6 @@ function ProductPage() {
   const product = useMemo(() => normalizeProduct(productResponse), [productResponse]);
 
   const navigate = useNavigate();
-  const add = useCart((s) => s.add);
   const toggleWish = useWishlist((s) => s.toggle);
   const wished = useWishlist((s) => s.ids.includes(product?._id));
   const [qty, setQty] = useState(1);
