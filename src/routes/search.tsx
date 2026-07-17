@@ -22,8 +22,9 @@ function SearchPage() {
     const lower = q.toLowerCase();
     return products.filter(p =>
       p.name.toLowerCase().includes(lower) ||
-      p.subcategory.toLowerCase().includes(lower) ||
-      p.category.toLowerCase().includes(lower)
+      p.description.toLowerCase().includes(lower) ||
+      p.category.toLowerCase().includes(lower) ||
+      p.tags.some(tag => tag.toLowerCase().includes(lower))
     );
   }, [q]);
 

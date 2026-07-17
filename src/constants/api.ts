@@ -10,5 +10,5 @@ if (hostname.includes("pakovo.pk")) URL = servers.live;
 else URL = servers.local;
 
 export const SOCKET_URL = `${URL}`;
-export const UPLOADS_URL = "";
+export const UPLOADS_URL = URL + "/";
 export const BASE_URL = URL + "/api/v1";

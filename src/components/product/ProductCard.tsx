@@ -1,11 +1,11 @@
-import { Link } from "@/lib/router-compat";
-import { Heart, ShoppingBag, Star } from "lucide-react";
+import { UPLOADS_URL } from "@/constants/api";
 import { type Product } from "@/data/products";
-import { categoryFallbackImage } from "@/data/products";
 import { useCart } from "@/lib/cart-store";
-import { useWishlist } from "@/lib/wishlist-store";
 import { formatPrice } from "@/lib/format";
+import { Link } from "@/lib/router-compat";
 import { cn } from "@/lib/utils";
+import { useWishlist } from "@/lib/wishlist-store";
+import { Heart, ShoppingBag, Star } from "lucide-react";
 
 export function ProductCard({ product }: { product: Product }) {
   const add = useCart((s) => s.add);
@@ -24,17 +24,13 @@ export function ProductCard({ product }: { product: Product }) {
       <Link
         to="/products/$slug"
         params={{ slug: product.slug }}
-        className="relative aspect-[4/5] overflow-hidden rounded-xl bg-surface"
+        className="relative aspect-4/5 overflow-hidden rounded-xl bg-surface"
       >
         <img
-          src={product.image}
+          src={UPLOADS_URL + product.image}
           alt={product.name}
-          loading="lazy"
-          onError={(e) => {
-            const img = e.currentTarget;
-            const fb = categoryFallbackImage(product.category);
-            if (img.src !== fb) img.src = fb;
-          }}
+          crossOrigin="anonymous"
+          loading="lazy"  
           className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
         {product.badge && (
@@ -67,7 +63,7 @@ export function ProductCard({ product }: { product: Product }) {
         </button>
       </Link>
       <div className="mt-3 px-1">
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">{product.subcategory}</p>
+        <p className="text-xs uppercase tracking-wider text-muted-foreground">{product?.category || "N/A"}</p>
         <Link to="/products/$slug" params={{ slug: product.slug }} className="mt-1 block text-sm font-medium hover:text-brand line-clamp-2">
           {product.name}
         </Link>
@@ -98,7 +94,7 @@ export function ProductRow({ products }: { products: Product[] }) {
   return (
     <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scroll-px-4 lg:grid lg:grid-cols-4 lg:gap-6 lg:overflow-visible">
       {products.map((p) => (
-        <div key={p.id} className="w-[70%] flex-shrink-0 snap-start sm:w-[45%] md:w-[35%] lg:w-auto">
+        <div key={p.id} className="w-[70%] shrink-0 snap-start sm:w-[45%] md:w-[35%] lg:w-auto">
           <ProductCard product={p} />
         </div>
       ))}
