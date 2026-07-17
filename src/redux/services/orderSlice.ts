@@ -43,6 +43,14 @@ export const orderSlice = createApi({
         body,
       }),
     }),
+
+    createOrder: builder.mutation({
+      query: (body) => ({
+        url: "/create-order",
+        method: "POST",
+        body,
+      }),
+    }),
   }),
 });
 
@@ -51,4 +59,5 @@ export const {
   useGetMyOrdersQuery,
   useGetOrderByIdQuery,
   useUpdateOrderStatusMutation,
+  useCreateOrderMutation
 } = orderSlice;
