@@ -9,10 +9,12 @@ export const cartSlice = createApi({
     credentials: "include",
     prepareHeaders,
   }),
+  tagTypes: ["cart"],
   endpoints: (builder) => ({
     getMyCart: builder.query({
       query: () => "/",
-      transformResponse: (response: any) => response?.coupon,
+      transformResponse: (response: any) => response?.data,
+      providesTags: ["cart"],
     }),
 
     addToCart: builder.mutation({
@@ -21,21 +23,25 @@ export const cartSlice = createApi({
         method: "POST",
         body,
       }),
+      invalidatesTags: ["cart"],
     }),
 
     updateCart: builder.mutation({
       query: (body) => ({
-        url: "update-product",
+        url: "/update-product",
         method: "PUT",
         body,
       }),
+      invalidatesTags: ["cart"],
     }),
 
     deleteFromCart: builder.mutation({
       query: (id) => ({
-        url: `/update-product`,
+        url: `/delete-product/${id}`,
         method: "DELETE",
+        params: { id },
       }),
+      invalidatesTags: ["cart"],
     }),
   }),
 });

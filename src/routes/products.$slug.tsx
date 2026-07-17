@@ -5,13 +5,14 @@ import { formatPrice } from "@/lib/format";
 import { createFileRoute, Link, useNavigate } from "@/lib/router-compat";
 import { cn } from "@/lib/utils";
 import { useWishlist } from "@/lib/wishlist-store";
+import { useAddToCartMutation } from "@/redux/services/cartSlice";
 import { useGetProductBySlugQuery } from "@/redux/services/productSlice";
 import { Heart, Minus, Plus, RotateCcw, ShieldCheck, ShoppingBag, Star, Truck } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/products/$slug")({
-
   notFoundComponent: () => (
     <div className="container-px mx-auto max-w-7xl py-24 text-center">
       <h1 className="font-display text-2xl font-bold">Product not found</h1>
@@ -43,23 +44,24 @@ function ProductPage() {
   const [activeImg, setActiveImg] = useState(0);
   const [zoom, setZoom] = useState<{ x: number; y: number } | null>(null);
 
-  const doAdd = () =>
-    add(
-      {
-        id: product?._id,
-        slug: product.slug,
-        name: product.title,
-        price: product.price,
-        image: product.image,
-      },
-      qty,
-    );
+  const [addToCart, { isLoading: isAddingToCart }] = useAddToCartMutation();
+
+  const doAdd = async () => {
+    const res: any = await addToCart({ productId: product._id, quantity: qty });
+    if (res?.data?.success) {
+      toast.success(res.data.message || "Operation successful")
+    } else {
+      toast.error(res.error.data.message || "something went wrong")
+    }
+  };
 
   if (isLoading && !productResponse) {
     return (
       <div className="container-px mx-auto max-w-7xl py-24 text-center">
         <h1 className="font-display text-2xl font-bold">Loading product…</h1>
-        <p className="mt-3 text-sm text-muted-foreground">Please wait while we fetch the product details.</p>
+        <p className="mt-3 text-sm text-muted-foreground">
+          Please wait while we fetch the product details.
+        </p>
       </div>
     );
   }
@@ -165,7 +167,7 @@ function ProductPage() {
             )}
           </div>
           <p className="mt-5 leading-relaxed text-muted-foreground">{product.description}</p>
-{/* 
+          {/* 
           {product.variants?.map((v: { name: string; options: string[] }) => (
             <div key={v.name} className="mt-6">
               <p className="text-sm font-medium">
@@ -208,7 +210,7 @@ function ProductPage() {
                 <Plus className="h-4 w-4" />
               </button>
             </div>
-            <Button variant="hero" size="lg" className="flex-1" onClick={doAdd}>
+            <Button disabled={isAddingToCart} variant="hero" size="lg" className="flex-1" onClick={doAdd}>
               <ShoppingBag className="h-4 w-4" /> Add to bag
             </Button>
             <Button
@@ -248,7 +250,6 @@ function ProductPage() {
             <details open className="rounded-xl border border-border p-4">
               <summary className="cursor-pointer font-medium">Specifications</summary>
               <ul className="mt-3 space-y-1.5 text-sm text-muted-foreground">
-             
                 <li>
                   <strong className="text-foreground">Category:</strong> {product.category}
                 </li>
@@ -256,7 +257,8 @@ function ProductPage() {
                   <strong className="text-foreground">SKU:</strong> {product?._id?.toUpperCase()}
                 </li>
                 <li>
-                  <strong className="text-foreground">In stock:</strong> {product.inStock ? "Yes — ships within 24h" : "Out of stock"}
+                  <strong className="text-foreground">In stock:</strong>{" "}
+                  {product.inStock ? "Yes — ships within 24h" : "Out of stock"}
                 </li>
               </ul>
             </details>
