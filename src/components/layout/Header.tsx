@@ -1,25 +1,22 @@
-import { Link, useNavigate } from "@/lib/router-compat";
-import { Heart, Search, ShoppingBag, User, Menu, X } from "lucide-react";
-import { useState } from "react";
-import { useCart } from "@/lib/cart-store";
-import { useWishlist } from "@/lib/wishlist-store";
-import { MegaMenu } from "./MegaMenu";
-import { categories } from "@/data/categories";
 import logo from "@/assets/logo.png";
-import { useDispatch, useSelector } from "react-redux";
+import { categories } from "@/data/categories";
+import { useCart } from "@/lib/cart-store";
+import { Link, useNavigate } from "@/lib/router-compat";
 import { logout, selectUser } from "@/redux/reducers/userSlice";
-import { Button } from "../ui/button";
-import { toast } from "sonner";
 import { useLogoutMutation } from "@/redux/services/authSlice";
 import { useGetMyCartQuery } from "@/redux/services/cartSlice";
 import { useGetMyWishlistQuery } from "@/redux/services/wishlistSlice";
+import { Heart, Menu, Search, ShoppingBag, User, X } from "lucide-react";
+import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "sonner";
+import { Button } from "../ui/button";
+import { MegaMenu } from "./MegaMenu";
 
 export function Header() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const setCartOpen = useCart((s) => s.setOpen);
-  const cartCount = useCart((s) => s.lines.reduce((n, l) => n + l.qty, 0));
-  const wishCount = useWishlist((s) => s.ids.length);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [q, setQ] = useState("");
 
@@ -155,12 +152,12 @@ export function Header() {
         </nav>
       </div>
 
-      <div className="hidden border-t border-border lg:block">
+      <div className="hidden border-t border-border lg:block relative">
         <div className="container-px mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-6 gap-y-2 py-3 text-sm font-medium xl:gap-x-8">
           <Link to="/" className="hover:text-brand transition-colors">
             Home
           </Link>
-          <div className="group relative">
+          <div className="group">
             <Link to="/shop" className="flex items-center gap-1 hover:text-brand transition-colors">
               Shop
             </Link>
