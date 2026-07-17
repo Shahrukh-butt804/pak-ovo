@@ -9,7 +9,7 @@ import { orderSlice } from "./services/orderSlice";
 import { productSlice } from "./services/productSlice";
 import { resourceSlice } from "./services/resourceSlice";
 import { cartSlice } from "./services/cartSlice";
-import { collectionSlice } from "./services/collectionSlice";
+import { wishlistSlice } from "./services/wishlistSlice";
 import { categorySlice } from "./services/categorySlice";
 
 export const store = configureStore({
@@ -20,7 +20,7 @@ export const store = configureStore({
     [userManagementSlice.reducerPath]: userManagementSlice.reducer,
     [orderSlice.reducerPath]: orderSlice.reducer,
     [productSlice.reducerPath]: productSlice.reducer,
-    [collectionSlice.reducerPath]: collectionSlice.reducer,
+    [wishlistSlice.reducerPath]: wishlistSlice.reducer,
     [resourceSlice.reducerPath]: resourceSlice.reducer,
     [cartSlice.reducerPath]: cartSlice.reducer,
     [categorySlice.reducerPath]: categorySlice.reducer,
@@ -34,7 +34,7 @@ export const store = configureStore({
       .concat(userManagementSlice.middleware)
       .concat(orderSlice.middleware)
       .concat(productSlice.middleware)
-      .concat(collectionSlice.middleware)
+      .concat(wishlistSlice.middleware)
       .concat(resourceSlice.middleware)
       .concat(cartSlice.middleware)
       .concat(categorySlice.middleware), // Add RTK Query middleware

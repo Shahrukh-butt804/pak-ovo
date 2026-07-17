@@ -5,11 +5,13 @@ import { Link } from "@/lib/router-compat";
 import { cn } from "@/lib/utils";
 import { useWishlist } from "@/lib/wishlist-store";
 import { useAddToCartMutation } from "@/redux/services/cartSlice";
+import { useAddProductToWishlistMutation } from "@/redux/services/wishlistSlice";
 import { Heart, ShoppingBag, Star } from "lucide-react";
 import { toast } from "sonner";
 
 export function ProductCard({ product }: { product: Product }) {
   const toggleWish = useWishlist((s) => s.toggle);
+  const [addToWishlist, { isLoading: isAddingToWishlist }] = useAddProductToWishlistMutation();
   const wished = useWishlist((s) => s.ids.includes(product.id));
 
   const [addToCart, { isLoading: isAddingToCart }] = useAddToCartMutation();
@@ -21,6 +23,18 @@ export function ProductCard({ product }: { product: Product }) {
     if (res?.data?.success) {
       toast.success(res.data.message || "Operation successful");
     } else {
+      toast.error(res.error.data.message || "something went wrong");
+    }
+  };
+  const handleAddToWishlist = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    toggleWish(product.id);
+    e.preventDefault();
+    e.stopPropagation();
+    const res: any = await addToWishlist(product.id);
+    if (res?.data?.success) {
+      toast.success(res.data.message || "Operation successful");
+    } else {
+      toggleWish(product.id);
       toast.error(res.error.data.message || "something went wrong");
     }
   };
@@ -57,10 +71,8 @@ export function ProductCard({ product }: { product: Product }) {
           </span>
         )}
         <button
-          onClick={(e) => {
-            e.preventDefault();
-            toggleWish(product.id);
-          }}
+          onClick={handleAddToWishlist}
+          disabled={isAddingToWishlist}
           aria-label="Add to wishlist"
           className={cn(
             "absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-background/90 backdrop-blur transition-all hover:scale-110",
