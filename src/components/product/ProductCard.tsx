@@ -3,16 +3,19 @@ import { type Product } from "@/data/products";
 import { formatPrice } from "@/lib/format";
 import { Link } from "@/lib/router-compat";
 import { cn } from "@/lib/utils";
-import { useWishlist } from "@/lib/wishlist-store";
 import { useAddToCartMutation } from "@/redux/services/cartSlice";
-import { useAddProductToWishlistMutation } from "@/redux/services/wishlistSlice";
+import {
+  useAddProductToWishlistMutation,
+  useDeleteFromWishlistMutation,
+} from "@/redux/services/wishlistSlice";
 import { Heart, ShoppingBag, Star } from "lucide-react";
 import { toast } from "sonner";
 
-export function ProductCard({ product }: { product: Product }) {
-  const toggleWish = useWishlist((s) => s.toggle);
+export function ProductCard({ product, refetch }: { product: Product; refetch?: any }) {
+  // const toggleWish = useWishlist((s) => s.toggle);
   const [addToWishlist, { isLoading: isAddingToWishlist }] = useAddProductToWishlistMutation();
-  const wished = useWishlist((s) => s.ids.includes(product.id));
+  const [deleteToWishlist, { isLoading: isdeleteingToWishlist }] = useDeleteFromWishlistMutation();
+  const wished = product.wished ?? false;
 
   const [addToCart, { isLoading: isAddingToCart }] = useAddToCartMutation();
 
@@ -27,14 +30,13 @@ export function ProductCard({ product }: { product: Product }) {
     }
   };
   const handleAddToWishlist = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    toggleWish(product.id);
     e.preventDefault();
     e.stopPropagation();
-    const res: any = await addToWishlist(product.id);
+    const res: any = wished ? await deleteToWishlist(product.id) : await addToWishlist(product.id);
     if (res?.data?.success) {
+      refetch()
       toast.success(res.data.message || "Operation successful");
     } else {
-      toggleWish(product.id);
       toast.error(res.error.data.message || "something went wrong");
     }
   };
@@ -72,7 +74,7 @@ export function ProductCard({ product }: { product: Product }) {
         )}
         <button
           onClick={handleAddToWishlist}
-          disabled={isAddingToWishlist}
+          disabled={isAddingToWishlist || isdeleteingToWishlist}
           aria-label="Add to wishlist"
           className={cn(
             "absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-background/90 backdrop-blur transition-all hover:scale-110",
@@ -120,11 +122,11 @@ export function ProductCard({ product }: { product: Product }) {
   );
 }
 
-export function ProductGrid({ products }: { products: Product[] }) {
+export function ProductGrid({ products, refetch }: { products: Product[]; refetch?: any }) {
   return (
     <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">
       {products.map((p) => (
-        <ProductCard key={p.id} product={p} />
+        <ProductCard key={p.id} product={p} refetch={refetch} />
       ))}
     </div>
   );

@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@/lib/router-compat";
 import { useMemo, useState, type FormEvent } from "react";
 import type { Product } from "@/data/products";
 import { ProductGrid } from "@/components/product/ProductCard";
+import { useWishlist } from "@/lib/wishlist-store";
 import { z } from "zod";
 import { useGetAllProductsQuery } from "@/redux/services/productSlice";
 import { useGetAllCategoriesQuery } from "@/redux/services/categorySlice";
@@ -20,7 +21,11 @@ export const Route = createFileRoute("/shop")({
   head: () => ({
     meta: [
       { title: "Shop all — PakOvo" },
-      { name: "description", content: "Browse all premium products: cosmetics, perfumes, watches, bed sheets, curtains, herbs." },
+      {
+        name: "description",
+        content:
+          "Browse all premium products: cosmetics, perfumes, watches, bed sheets, curtains, herbs.",
+      },
       { property: "og:url", content: "/shop" },
     ],
     links: [{ rel: "canonical", href: "/shop" }],
@@ -37,25 +42,33 @@ function Shop() {
   const keyword = (sp.q ?? "").trim();
   const categoryId = sp.category ?? sp.cat ?? "";
   const { data: categoriesResponse } = useGetAllCategoriesQuery({});
-  const categories = useMemo(() => (categoriesResponse?.docs ?? categoriesResponse ?? []) as CategoryApiItem[], [categoriesResponse]);
+  const categories = useMemo(
+    () => (categoriesResponse?.docs ?? categoriesResponse ?? []) as CategoryApiItem[],
+    [categoriesResponse],
+  );
 
-  const { data, isLoading } = useGetAllProductsQuery({
+  const { data, isLoading , refetch } = useGetAllProductsQuery({
     page: currentPage,
     limit: 8,
     keyword: keyword || undefined,
     category: categoryId || undefined,
     sortBy: mapSortToBackend(sort),
-  });
+  },{refetchOnMountOrArgChange : true});
 
   const selectedCategory = useMemo(() => {
     if (!categoryId) return undefined;
     return categories.find((c: CategoryApiItem) => c._id === categoryId || c.id === categoryId);
   }, [categories, categoryId]);
 
-  const items = useMemo(() => {
-    const docs = (data?.docs ?? []).map((item: ProductApiItem, index: number) => normalizeProduct(item, index, sp.cat ?? "cosmetics"));
 
-    let list: Product[] = docs;
+  const items = useMemo(() => {
+    const docs: Product[] = (data?.docs ?? []).map((item: ProductApiItem, index: number) =>
+      normalizeProduct(item, index, sp.cat ?? "cosmetics"),
+    );
+
+    let list: Product[] = docs.map((product: Product) => ({
+      ...product,
+    }));
     const term = keyword.toLowerCase();
     if (term) {
       list = list.filter((product: Product) => {
@@ -63,19 +76,27 @@ function Shop() {
         return haystack.includes(term);
       });
     }
-    if (sp.filter === "sale") list = list.filter((product: Product) => Boolean(product.compareAt && product.compareAt > product.price));
+    if (sp.filter === "sale")
+      list = list.filter((product: Product) =>
+        Boolean(product.compareAt && product.compareAt > product.price),
+      );
     if (selectedCategory) {
       const selectedCategoryName = selectedCategory.name?.toLowerCase();
       const selectedCategorySlug = selectedCategory.slug?.toLowerCase();
       list = list.filter((product: Product) => {
         const categoryValue = product.category.toLowerCase();
-        return categoryValue === selectedCategoryName || categoryValue === selectedCategorySlug || categoryValue === categoryId;
+        return (
+          categoryValue === selectedCategoryName ||
+          categoryValue === selectedCategorySlug ||
+          categoryValue === categoryId
+        );
       });
     }
     if (sort === "price-asc") list.sort((a: Product, b: Product) => a.price - b.price);
     if (sort === "price-desc") list.sort((a: Product, b: Product) => b.price - a.price);
     if (sort === "rating") list.sort((a: Product, b: Product) => b.rating - a.rating);
-    if (sort === "newest") list.sort((a: Product, b: Product) => Number(b.badge === "new") - Number(a.badge === "new"));
+    if (sort === "newest")
+      list.sort((a: Product, b: Product) => Number(b.badge === "new") - Number(a.badge === "new"));
     return list;
   }, [categoryId, data?.docs, keyword, sp.filter, sort]);
 
@@ -111,14 +132,22 @@ function Shop() {
   return (
     <div className="container-px mx-auto max-w-7xl py-10">
       <nav className="mb-2 text-xs text-muted-foreground">
-        <Link to="/" className="hover:text-foreground">Home</Link> / Shop
+        <Link to="/" className="hover:text-foreground">
+          Home
+        </Link>{" "}
+        / Shop
       </nav>
       <h1 className="font-display text-3xl font-bold md:text-4xl">
-        {categoryId ? categories.find((c: CategoryApiItem) => c._id === categoryId)?.name ?? "Category" : "All products"}
+        {categoryId
+          ? (categories.find((c: CategoryApiItem) => c._id === categoryId)?.name ?? "Category")
+          : "All products"}
       </h1>
       <p className="mt-2 text-muted-foreground">{totalItems} items</p>
 
-      <form onSubmit={handleSearchSubmit} className="mt-6 flex flex-col gap-3 rounded-2xl border border-border/70 bg-background/70 p-4 shadow-sm md:flex-row md:items-center">
+      <form
+        onSubmit={handleSearchSubmit}
+        className="mt-6 flex flex-col gap-3 rounded-2xl border border-border/70 bg-background/70 p-4 shadow-sm md:flex-row md:items-center"
+      >
         <input
           value={searchInput}
           onChange={(event) => setSearchInput(event.target.value)}
@@ -126,7 +155,12 @@ function Shop() {
           className="h-10 flex-1 rounded-full border border-border bg-background px-4 text-sm outline-none ring-0"
         />
         <div className="flex flex-wrap items-center gap-2">
-          <button type="submit" className="h-10 rounded-full bg-brand px-4 text-sm font-medium text-brand-foreground">Search</button>
+          <button
+            type="submit"
+            className="h-10 rounded-full bg-brand px-4 text-sm font-medium text-brand-foreground"
+          >
+            Search
+          </button>
           <button
             type="button"
             onClick={() => {
@@ -141,18 +175,35 @@ function Shop() {
       </form>
 
       <div className="mt-8 flex flex-wrap items-center gap-2">
-        <Link to="/shop" search={{ q: keyword || undefined, sort, filter: undefined, cat: undefined, page: 1 }} className="rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:border-brand hover:text-brand">All</Link>
+        <Link
+          to="/shop"
+          search={{ q: keyword || undefined, sort, filter: undefined, cat: undefined, page: 1 }}
+          className="rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:border-brand hover:text-brand"
+        >
+          All
+        </Link>
         {categories.map((category: CategoryApiItem) => (
           <Link
             key={category._id}
             to="/shop"
-            search={{ q: keyword || undefined, sort, filter: sp.filter || undefined, cat: category._id, category: category._id, page: 1 }}
+            search={{
+              q: keyword || undefined,
+              sort,
+              filter: sp.filter || undefined,
+              cat: category._id,
+              category: category._id,
+              page: 1,
+            }}
             className="rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:border-brand hover:text-brand"
           >
             {category.name}
           </Link>
         ))}
-        <select value={sort} onChange={(event) => handleSortChange(event.target.value)} className="ml-auto h-9 rounded-full border border-border bg-background px-3 text-sm">
+        <select
+          value={sort}
+          onChange={(event) => handleSortChange(event.target.value)}
+          className="ml-auto h-9 rounded-full border border-border bg-background px-3 text-sm"
+        >
           <option value="popular">Popular</option>
           <option value="newest">Newest</option>
           <option value="rating">Top rated</option>
@@ -169,7 +220,7 @@ function Shop() {
             ))}
           </div>
         ) : items.length > 0 ? (
-          <ProductGrid products={items} />
+          <ProductGrid products={items} refetch={refetch} />
         ) : (
           <div className="rounded-2xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
             No products matched your filters.
@@ -180,7 +231,8 @@ function Shop() {
       {totalPages > 1 && (
         <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6">
           <p className="text-sm text-muted-foreground">
-            Showing {Math.min((currentPage - 1) * 8 + 1, totalItems)}-{Math.min(currentPage * 8, totalItems)} of {totalItems}
+            Showing {Math.min((currentPage - 1) * 8 + 1, totalItems)}-
+            {Math.min(currentPage * 8, totalItems)} of {totalItems}
           </p>
           <div className="flex items-center gap-2">
             <button
@@ -249,15 +301,25 @@ type ProductApiItem = {
   tags?: string[];
   subcategory?: string;
   category?: string | { slug?: string; name?: string };
+  wished?: boolean;
 };
 
 function normalizeProduct(item: ProductApiItem, index: number, fallbackCategory: string): Product {
   const name = String(item.name ?? item.title ?? "Untitled product");
-  const categoryName = typeof item.category === "string" ? item.category : item.category?.name ?? item.category?.slug ?? fallbackCategory;
+  const categoryName =
+    typeof item.category === "string"
+      ? item.category
+      : (item.category?.name ?? item.category?.slug ?? fallbackCategory);
   const category = String(categoryName);
   const discounted = item.discountedPrice != null;
-  const price = Number(item.discountedPrice ?? item.price ?? item.salePrice ?? item.originalPrice ?? 0);
-  const compareAt = discounted ? Number(item.price ?? item.compareAt ?? 0) : item.compareAt ? Number(item.compareAt) : undefined;
+  const price = Number(
+    item.discountedPrice ?? item.price ?? item.salePrice ?? item.originalPrice ?? 0,
+  );
+  const compareAt = discounted
+    ? Number(item.price ?? item.compareAt ?? 0)
+    : item.compareAt
+      ? Number(item.compareAt)
+      : undefined;
 
   return {
     id: String(item._id ?? item.id ?? `${category}-${index + 1}`),
@@ -274,6 +336,7 @@ function normalizeProduct(item: ProductApiItem, index: number, fallbackCategory:
     image: String(item.image ?? item.thumbnail ?? item.productImage ?? ""),
     images: Array.isArray(item.images) ? item.images : undefined,
     tags: Array.isArray(item.tags) ? item.tags : [category],
+    wished: item.wished ?? false,
   };
 }
 
@@ -293,5 +356,8 @@ function mapSortToBackend(value: string) {
 }
 
 function slugify(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
 }

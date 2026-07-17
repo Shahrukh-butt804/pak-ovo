@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@/lib/router-compat";
 import { useWishlist } from "@/lib/wishlist-store";
-import { products } from "@/data/products";
+import { products, type Product } from "@/data/products";
 import { ProductGrid } from "@/components/product/ProductCard";
 import { Button } from "@/components/ui/button";
 import { useGetMyWishlistQuery } from "@/redux/services/wishlistSlice";
@@ -18,17 +18,23 @@ function Wishlist() {
   const apiProducts = Array.isArray(wishlist?.products) ? wishlist.products : [];
   const apiItems = apiProducts.map((p: any) => ({
     id: p._id,
-    slug: p.slug,
-    name: p.title ?? p.name,
+    slug: p.slug ?? (p.title || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
+    name: p.title ?? p.name ?? "Product",
+    wished: true,
     image: p.image ? p.image.split("\\").join("/") : "",
     price: p.price ?? 0,
     rating: p.rating ?? 0,
     reviews: p.reviews ?? 0,
-    category: p.category ?? "",
+    category: p.category as any,
+    subcategory: p.subcategory ?? "",
+    description: p.description ?? "",
+    tags: [],
     compareAt: p.discountedPrice ?? undefined,
-  }));
+  } as Product));
 
-  const localItems = products.filter((p) => ids.includes(p.id));
+  const localItems = products
+    .filter((p) => ids.includes(p.id))
+    .map((p) => ({ ...p, wished: true }));
   const items = apiItems.length > 0 ? apiItems : localItems;
 
   return (

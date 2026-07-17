@@ -10,6 +10,7 @@ export interface Product {
   id: string;
   slug: string;
   name: string;
+  wished?: boolean;
   category: CategorySlug;
   subcategory: string;
   price: number;
