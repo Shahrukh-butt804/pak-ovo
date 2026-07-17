@@ -7,11 +7,12 @@ import { MegaMenu } from "./MegaMenu";
 import { categories } from "@/data/categories";
 import logo from "@/assets/logo.png";
 import { useDispatch, useSelector } from "react-redux";
-import {  logout, selectUser } from "@/redux/reducers/userSlice";
+import { logout, selectUser } from "@/redux/reducers/userSlice";
 import { Button } from "../ui/button";
 import { toast } from "sonner";
 import { useLogoutMutation } from "@/redux/services/authSlice";
-
+import { useGetMyCartQuery } from "@/redux/services/cartSlice";
+import { useGetMyWishlistQuery } from "@/redux/services/wishlistSlice";
 
 export function Header() {
   const dispatch = useDispatch();
@@ -22,8 +23,10 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [q, setQ] = useState("");
 
-    const [logoutuser, { isLoading }] = useLogoutMutation();
-  
+  const { data: cart } = useGetMyCartQuery({});
+  const { data: wishlist } = useGetMyWishlistQuery({});
+
+  const [logoutuser, { isLoading }] = useLogoutMutation();
 
   const username = useSelector(selectUser)?.fullName;
 
@@ -34,9 +37,9 @@ export function Header() {
     setMobileOpen(false);
   };
 
-    const handleLogout = async (ev: React.FormEvent) => {
+  const handleLogout = async (ev: React.FormEvent) => {
     ev.preventDefault();
- 
+
     const res: any = await logoutuser({});
 
     if (res?.data?.success) {
@@ -60,14 +63,12 @@ export function Header() {
           <div className="flex items-center gap-4">
             {username ? (
               <>
-            <Link to="/account" className="hover:text-gold transition-colors">
-              My Account
-            </Link>
-                <Button 
-                size="sm"
-                variant="ghost"
-                onClick={handleLogout}
-                >Logout</Button>
+                <Link to="/account" className="hover:text-gold transition-colors">
+                  My Account
+                </Link>
+                <Button disabled={isLoading} size="sm" variant="ghost" onClick={handleLogout}>
+                  Logout
+                </Button>
               </>
             ) : (
               <Link to="/auth/login" className="hover:text-gold transition-colors">
@@ -78,7 +79,7 @@ export function Header() {
         </div>
       </div>
 
-      <div className="container-px mx-auto flex h-20 max-w-7xl items-center gap-6">
+      <div className="container-px mx-auto flex justify-between h-20 max-w-7xl items-center gap-6">
         <button
           className="lg:hidden -ml-2 p-2"
           aria-label="Open menu"
@@ -101,7 +102,7 @@ export function Header() {
           </span>
         </Link>
 
-        <form onSubmit={submit} className="relative ml-auto hidden max-w-md flex-1 lg:block">
+        {/* <form onSubmit={submit} className="relative ml-auto hidden max-w-md flex-1 lg:block">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             value={q}
@@ -110,7 +111,7 @@ export function Header() {
             placeholder="Search cosmetics, perfumes, watches..."
             className="h-11 w-full rounded-full border border-input bg-secondary/50 pl-10 pr-4 text-sm outline-none transition-colors focus:border-brand focus:bg-background"
           />
-        </form>
+        </form> */}
 
         <nav className="ml-auto flex items-center gap-1 lg:ml-2">
           <Link
@@ -126,9 +127,9 @@ export function Header() {
             className="relative p-2 hover:text-brand transition-colors"
           >
             <Heart className="h-5 w-5" />
-            {wishCount > 0 && (
+            {wishlist?.products?.length > 0 && (
               <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-bold text-gold-foreground">
-                {wishCount}
+                {wishlist?.products?.length || 0}
               </span>
             )}
           </Link>
@@ -145,9 +146,9 @@ export function Header() {
             className="relative p-2 hover:text-brand transition-colors"
           >
             <ShoppingBag className="h-5 w-5" />
-            {cartCount > 0 && (
+            {cart?.products?.length > 0 && (
               <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-bold text-brand-foreground">
-                {cartCount}
+                {cart?.products?.length || 0}
               </span>
             )}
           </button>
