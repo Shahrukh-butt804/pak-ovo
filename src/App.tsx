@@ -14,6 +14,7 @@ import { Route as CartRoute } from "@/routes/cart";
 import { Route as WishlistRoute } from "@/routes/wishlist";
 import { Route as CheckoutRoute } from "@/routes/checkout";
 import { Route as TrackRoute } from "@/routes/track";
+import { Route as OrderDetailRoute } from "@/routes/orderDetail";
 import { Route as AccountRoute } from "@/routes/account";
 import { Route as AdminRoute } from "@/routes/admin";
 import { Route as BlogRoute } from "@/routes/blog";
@@ -126,6 +127,7 @@ export function App() {
           <Route path="/wishlist" element={renderRoute(WishlistRoute)} />
           <Route path="/checkout" element={<PrivateRoute>{renderRoute(CheckoutRoute)}</PrivateRoute>} />
           <Route path="/track" element={<PrivateRoute>{renderRoute(TrackRoute)}</PrivateRoute>} />
+          <Route path="/order-details/:id" element={<PrivateRoute>{renderRoute(OrderDetailRoute)}</PrivateRoute>} />
           <Route path="/account" element={<PrivateRoute>{renderRoute(AccountRoute)}</PrivateRoute>} />
           <Route path="/admin" element={renderRoute(AdminRoute)} />
           <Route path="/blog" element={renderRoute(BlogRoute)} />
