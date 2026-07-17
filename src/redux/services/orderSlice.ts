@@ -33,8 +33,8 @@ export const orderSlice = createApi({
       }),
     }),
     getOrderById: builder.query({
-      query: (id) => `/get-order-by-id/${id}`,
-      transformResponse: (response: any) => response?.order,
+      query: (id) => `/order-by-id/${id}`,
+      transformResponse: (response: any) => response?.data,
     }),
     updateOrderStatus: builder.mutation({
       query: ({ id, body }) => ({
