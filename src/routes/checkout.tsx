@@ -1,9 +1,11 @@
 import { createFileRoute, Link } from "@/lib/router-compat";
 import { useState } from "react";
 import { CheckCircle2, Lock, ShoppingBag, Truck, CreditCard } from "lucide-react";
-import { useCart, cartTotals } from "@/lib/cart-store";
+import { useCart } from "@/lib/cart-store";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/format";
+import { useGetMyCartQuery } from "@/redux/services/cartSlice";
+import { UPLOADS_URL } from "@/constants/api";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({ meta: [{ title: "Checkout — PakOvo" }, { name: "description", content: "Complete your purchase securely." }] }),
@@ -11,9 +13,16 @@ export const Route = createFileRoute("/checkout")({
 });
 
 function Checkout() {
-  const { lines, clear } = useCart();
-  const t = cartTotals(lines);
+  const { clear } = useCart();
   const [done, setDone] = useState(false);
+  const { data: cart, isLoading } = useGetMyCartQuery({});
+
+  const items = cart?.products ?? [];
+  const itemCount = cart?.itemCount ?? items.length ?? 0;
+  const subtotal = Number(cart?.subtotal ?? 0);
+  const shipping = subtotal > 0 ? 0 : 0;
+  const tax = 0;
+  const total = subtotal + shipping + tax;
 
   if (done) {
     return (
@@ -29,7 +38,7 @@ function Checkout() {
     );
   }
 
-  if (lines.length === 0) {
+  if (!isLoading && items.length === 0) {
     return (
       <div className="container-px mx-auto max-w-7xl py-24 text-center">
         <h1 className="font-display text-3xl font-bold">Nothing to check out</h1>
@@ -77,32 +86,47 @@ function Checkout() {
             </div>
             <Input label="Name on card" required />
           </Block>
-          <Button variant="hero" size="xl" type="submit" className="w-full">Pay {formatPrice(t.total)}</Button>
+          <Button variant="hero" size="xl" type="submit" className="w-full">Pay {formatPrice(total)}</Button>
         </div>
 
         <aside className="h-fit rounded-2xl border border-border bg-surface p-6 lg:sticky lg:top-32">
           <h2 className="font-display text-lg font-semibold">Order summary</h2>
+          <div className="mt-2 text-sm text-muted-foreground">{itemCount} item{itemCount === 1 ? "" : "s"}</div>
           <ul className="mt-4 space-y-3">
-            {lines.map(l => (
-              <li key={`${l.id}-${l.variant ?? ""}`} className="flex gap-3">
-                <div className="relative h-16 w-16 overflow-hidden rounded-md bg-background">
-                  <img src={l.image} alt={l.name} className="h-full w-full object-cover" />
-                  <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-navy text-[10px] font-bold text-navy-foreground">{l.qty}</span>
-                </div>
-                <div className="flex-1 text-sm">
-                  <p className="font-medium line-clamp-1">{l.name}</p>
-                  {l.variant && <p className="text-xs text-muted-foreground">{l.variant}</p>}
-                </div>
-                <p className="text-sm font-semibold">{formatPrice(l.price * l.qty)}</p>
-              </li>
-            ))}
+            {items.map((item: any, index: number) => {
+              const product = item?.product ?? item;
+              const title = product?.title ?? product?.name ?? "Product";
+              const quantity = Number(item?.quantity ?? item?.qty ?? 1);
+              const price = Number(product?.effectivePrice ?? item?.price ?? 0);
+              const image = product?.image ?? product?.thumbnail ?? "";
+              const slug = product?.slug ?? "";
+              const productId = product?._id ?? product?.id ?? item?.productId ?? "";
+
+              return (
+                <li key={`${productId || index}`} className="flex gap-3">
+                  <div className="relative h-16 w-16 overflow-hidden rounded-md bg-background">
+                    {image ? (
+                      <img src={UPLOADS_URL + image} crossOrigin="anonymous" alt={title} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">No image</div>
+                    )}
+                    <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-navy text-[10px] font-bold text-navy-foreground">{quantity}</span>
+                  </div>
+                  <div className="flex-1 text-sm">
+                    <p className="font-medium line-clamp-1">{title}</p>
+                    {slug ? <p className="text-xs text-muted-foreground">{slug}</p> : null}
+                  </div>
+                  <p className="text-sm font-semibold">{formatPrice(price * quantity)}</p>
+                </li>
+              );
+            })}
           </ul>
           <div className="mt-4 space-y-1.5 border-t border-border pt-4 text-sm">
-            <Row label="Subtotal" value={formatPrice(t.subtotal)} />
-            <Row label="Shipping" value={t.shipping === 0 ? "Free" : formatPrice(t.shipping)} />
-            <Row label="Tax" value={formatPrice(t.tax)} />
+            <Row label="Subtotal" value={formatPrice(subtotal)} />
+            <Row label="Shipping" value={shipping === 0 ? "Free" : formatPrice(shipping)} />
+            {/* <Row label="Tax" value={formatPrice(tax)} /> */}
             <div className="flex justify-between border-t border-border pt-2 text-base font-semibold">
-              <span>Total</span><span>{formatPrice(t.total)}</span>
+              <span>Total</span><span>{formatPrice(total)}</span>
             </div>
           </div>
         </aside>
