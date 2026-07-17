@@ -58,9 +58,7 @@ export function CartDrawer() {
     }
   };
 
-
   if (!open) return null;
-
 
   return (
     <div className="fixed inset-0 z-60">
@@ -192,7 +190,13 @@ export function CartDrawer() {
                   <span>{formatPrice(total)}</span>
                 </div>
               </div>
-              <Button variant="hero" size="lg" className="mt-4 w-full" asChild>
+              <Button
+                disabled={isDeleting || isUpdating}
+                variant="hero"
+                size="lg"
+                className="mt-4 w-full"
+                asChild
+              >
                 <Link to="/checkout" onClick={() => setOpen(false)}>
                   Checkout
                 </Link>
