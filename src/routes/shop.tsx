@@ -235,6 +235,7 @@ type ProductApiItem = {
   description?: string;
   shortDescription?: string;
   price?: number;
+  discountedPrice?: number;
   salePrice?: number;
   originalPrice?: number;
   compareAt?: number;
@@ -254,17 +255,21 @@ function normalizeProduct(item: ProductApiItem, index: number, fallbackCategory:
   const name = String(item.name ?? item.title ?? "Untitled product");
   const categoryName = typeof item.category === "string" ? item.category : item.category?.name ?? item.category?.slug ?? fallbackCategory;
   const category = String(categoryName);
+  const discounted = item.discountedPrice != null;
+  const price = Number(item.discountedPrice ?? item.price ?? item.salePrice ?? item.originalPrice ?? 0);
+  const compareAt = discounted ? Number(item.price ?? item.compareAt ?? 0) : item.compareAt ? Number(item.compareAt) : undefined;
+
   return {
     id: String(item._id ?? item.id ?? `${category}-${index + 1}`),
     slug: String(item.slug ?? slugify(name) ?? `product-${index + 1}`),
     name,
     category: category as Product["category"],
     subcategory: String(category),
-    price: Number(item.price ?? item.salePrice ?? item.originalPrice ?? 0),
-    compareAt: item.compareAt ? Number(item.compareAt) : undefined,
+    price,
+    compareAt,
     rating: Number(item.rating ?? 4.5),
     reviews: Number(item.reviews ?? 0),
-    badge: item.badge ?? (item.compareAt ? "sale" : undefined),
+    badge: item.badge ?? (discounted || item.compareAt ? "sale" : undefined),
     description: String(item.description ?? item.shortDescription ?? ""),
     image: String(item.image ?? item.thumbnail ?? item.productImage ?? ""),
     images: Array.isArray(item.images) ? item.images : undefined,
