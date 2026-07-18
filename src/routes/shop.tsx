@@ -211,8 +211,8 @@ function Shop() {
           onChange={(event) => handleSortChange(event.target.value)}
           className="ml-auto h-9 rounded-full border border-border bg-background px-3 text-sm"
         >
-          <option value="popular">Popular</option>
           <option value="newest">Newest</option>
+          <option value="popular">Popular</option>
           <option value="rating">Top rated</option>
           <option value="price-asc">Price: low to high</option>
           <option value="price-desc">Price: high to low</option>

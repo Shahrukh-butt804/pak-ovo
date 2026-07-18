@@ -1,6 +1,7 @@
 import catFallback from "@/assets/cat-cosmetics.jpg";
+import Spinner from "@/components/spinner";
+import Table from "@/components/table";
 import { Button } from "@/components/ui/button";
-import { categories, type CategorySlug } from "@/data/categories";
 import {
   parseCsv,
   productCsvTemplate,
@@ -16,6 +17,8 @@ import { createFileRoute, Link, useNavigate } from "@/lib/router-compat";
 import { cn } from "@/lib/utils";
 import { logout, selectUser, setUser } from "@/redux/reducers/userSlice";
 import { useLoginMutation } from "@/redux/services/authSlice";
+import { useGetAllCategoriesWithSubCategoriesQuery } from "@/redux/services/categorySlice";
+import { useAddProductMutation, useDeleteProductMutation, useGetAllProductsQuery, useUpdateProductMutation } from "@/redux/services/productSlice";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import {
@@ -42,6 +45,9 @@ import {
 import { useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
+import { Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { useEffect } from "react";
+import { UPLOADS_URL } from "@/constants/api";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — PakOvo" }, { name: "robots", content: "noindex" }] }),
@@ -240,7 +246,7 @@ function Dashboard() {
         <div className="rounded-2xl border border-border bg-card p-6 lg:col-span-2">
           <h2 className="font-display text-lg font-semibold">Recent orders</h2>
           <div className="mt-4 overflow-x-auto rounded-lg border border-border">
-            <table className="w-full min-w-[480px] text-sm">
+            <table className="w-full min-w-120 text-sm">
               <thead className="bg-surface text-left text-xs uppercase tracking-wider text-muted-foreground">
                 <tr><th className="p-3">Order</th><th className="p-3">Customer</th><th className="p-3">Total</th><th className="p-3">Status</th></tr>
               </thead>
@@ -280,16 +286,21 @@ function Dashboard() {
 
 /* ---------- Products ---------- */
 function ProductsView() {
-  const { products, addProduct, updateProduct, deleteProduct, bulkAddProducts } = useAdmin();
-  const [q, setQ] = useState("");
+  const { products, addProduct, updateProduct, bulkAddProducts } = useAdmin();
   const [editing, setEditing] = useState<AdminProduct | null>(null);
   const [creating, setCreating] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [deletingItemId, setDeletingItemId] = useState("");
 
-  const filtered = useMemo(() => {
-    const t = q.toLowerCase();
-    return products.filter((p) => !t || p.name.toLowerCase().includes(t) || p.category.includes(t));
-  }, [products, q]);
+    const [pagination, setPagination] = useState({
+        page: 1,
+        limit: 10,
+        keyword: ""
+    })
+    const { data, isLoading,isFetching, refetch } = useGetAllProductsQuery({ ...pagination }, { refetchOnMountOrArgChange: true})
+
+    const [deleteProduct ,{ isLoading : isDeleting}] = useDeleteProductMutation()
+
 
   const exportCsv = () => {
     const headers = ["id", "name", "category", "subcategory", "price", "compareAt", "stock", "rating", "reviews", "active"];
@@ -301,12 +312,35 @@ function ProductsView() {
     toast.success(`Exported ${products.length} products to CSV`);
   };
 
+
+  const handleDelete = async (productId:any) => {
+    if(!productId){
+      toast.error("Product Id is Required");
+    }
+    setDeletingItemId(productId)
+    const res: any = await deleteProduct(productId);
+    if (res?.data?.success) {
+      toast.success(res?.data?.message || "Operation successful");
+      refetch()
+    } else {
+      toast.error( res?.error?.data?.message || res?.error?.data?.errors[0].msg || "something went wrong",);
+    }
+    setDeletingItemId("")
+  };
+
+  if (isLoading) {
+      return (
+          <div className='grid place-content-center'>
+              <Spinner size='lg' />
+          </div>
+      )
+  }
+
   return (
     <>
       <ToolbarCard
         title="Products"
-        count={`${products.length} SKUs`}
-        search={{ value: q, onChange: setQ, placeholder: "Search products…" }}
+        count={`Total ${data.totalDocs || "N/A"} Products`}
         actions={
           <>
             <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}><Upload className="h-4 w-4" /> Bulk CSV import</Button>
@@ -317,95 +351,25 @@ function ProductsView() {
       />
 
       <div className="overflow-x-auto rounded-2xl border border-border bg-card">
-        <table className="w-full min-w-[760px] text-sm">
-          <thead className="bg-surface text-left text-xs uppercase tracking-wider text-muted-foreground">
-            <tr>
-              <th className="p-3">Product</th><th className="p-3">Category</th>
-              <th className="p-3">Price</th><th className="p-3">Stock</th>
-              <th className="p-3">Status</th><th className="p-3 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {filtered.slice(0, 50).map((p) => (
-              <tr key={p.id}>
-                <td className="p-3">
-                  <div className="flex items-center gap-3">
-                    <img src={p.image} alt="" className="h-10 w-10 rounded-md object-cover" />
-                    <div className="min-w-0">
-                      <p className="truncate font-medium">{p.name}</p>
-                      <p className="text-xs text-muted-foreground">{p.subcategory}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="p-3 text-muted-foreground">{p.category}</td>
-                <td className="p-3">{formatPrice(p.price)}</td>
-                <td className="p-3">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      value={p.stock}
-                      min={0}
-                      onChange={(e) => updateProduct(p.id, { stock: Math.max(0, Number(e.target.value) || 0) })}
-                      className="h-7 w-16 rounded-md border border-input bg-background px-2 text-xs"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const next = p.stock === 0 ? 25 : 0;
-                        updateProduct(p.id, { stock: next });
-                        toast.success(next === 0 ? "Marked out of stock" : "Marked in stock");
-                      }}
-                      className={cn(
-                        "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider transition-colors",
-                        p.stock === 0
-                          ? "bg-destructive/10 text-destructive hover:bg-destructive/20"
-                          : p.stock < 10
-                            ? "bg-gold/15 text-gold-foreground hover:bg-gold/25"
-                            : "bg-brand/10 text-brand hover:bg-brand/20",
-                      )}
-                    >
-                      {p.stock === 0 ? "Out of stock" : p.stock < 10 ? "Low" : "In stock"}
-                    </button>
-                  </div>
-                </td>
-                <td className="p-3">
-                  <button
-                    onClick={() => updateProduct(p.id, { active: !p.active })}
-                    className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", p.active ? "bg-brand/10 text-brand" : "bg-secondary text-muted-foreground")}
-                  >
-                    {p.active ? "Active" : "Hidden"}
-                  </button>
-                </td>
-                <td className="p-3">
-                  <div className="flex justify-end gap-1">
-                    <button onClick={() => setEditing(p)} className="rounded-md p-1.5 hover:bg-secondary" aria-label="Edit"><Pencil className="h-4 w-4" /></button>
-                    <button
-                      onClick={() => {
-                        if (confirm(`Delete "${p.name}"?`)) {
-                          deleteProduct(p.id);
-                          toast.success("Product deleted");
-                        }
-                      }}
-                      className="rounded-md p-1.5 text-destructive hover:bg-destructive/10" aria-label="Delete"
-                    ><Trash2 className="h-4 w-4" /></button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {filtered.length === 0 && <p className="p-8 text-center text-sm text-muted-foreground">No products match your search.</p>}
-        {filtered.length > 50 && <p className="border-t border-border p-3 text-center text-xs text-muted-foreground">Showing 50 of {filtered.length}. Refine your search to see more.</p>}
+         <Table
+                tableData={{ data: data.docs, exlucdedFields: ["__v", "updatedAt", "_id", "slug", "image", "description", "wished","reviews","rating"] }}
+                setPagination={setPagination}
+                pagination={data || {}}
+                onEdit={setEditing}
+                onDelete={handleDelete}
+                isDeleting={isDeleting}
+                deletingItemId={deletingItemId}
+            />
       </div>
 
       {(creating || editing) && (
         <ProductForm
           initial={editing}
-          onClose={() => { setCreating(false); setEditing(null); }}
-          onSave={(data) => {
+          onClose={() => { setCreating(false); setEditing(null) }}
+          onSave={(data:any) => {
             if (editing) { updateProduct(editing.id, data); toast.success("Product updated"); }
             else { addProduct(data); toast.success("Product created"); }
-            setCreating(false); setEditing(null);
+            setCreating(false); setEditing(null); refetch()
           }}
         />
       )}
@@ -424,130 +388,322 @@ function ProductsView() {
   );
 }
 
-function ProductForm({
-  initial, onClose, onSave,
-}: { initial: AdminProduct | null; onClose: () => void; onSave: (data: Omit<AdminProduct, "id">) => void }) {
-  const [form, setForm] = useState<Omit<AdminProduct, "id">>(
-    initial ?? {
-      slug: "", name: "", category: "cosmetics", subcategory: "General",
-      price: 0, compareAt: undefined, rating: 4.5, reviews: 0,
-      description: "", image: catFallback, images: [], tags: [], stock: 25, active: true,
-      seoTitle: "", metaDescription: "", focusKeyword: "",
-    },
-  );
-  const [imgPreview, setImgPreview] = useState<string>(form.image);
-  const [galleryText, setGalleryText] = useState<string>((form.images ?? []).join("\n"));
+
+
+
+function getImageUrl(path?: string) {
+  if (!path) return "";
+  if (path.startsWith("http") || path.startsWith("blob:") || path.startsWith("data:")) return path;
+  return `${UPLOADS_URL}${path.replace(/\\/g, "/")}`;
+}
+
+export function ProductForm({
+  initial,
+  onClose,
+  onSave,
+}: {
+  initial: any;
+  onClose: any;
+  onSave?: any;
+}) {
+  const [catPage, setCatPage] = useState(1);
+
+  const { data: categoriesData, isLoading: isLoadingCategories } =
+    useGetAllCategoriesWithSubCategoriesQuery({ page: catPage, limit: 10 }) as {
+      data: any;
+      isLoading: boolean;
+    };
+
+  const [updateProduct, { isLoading: isUpdating }] = useUpdateProductMutation();
+  const [addProduct, { isLoading: isCreating }] = useAddProductMutation();
+  const isSaving = isUpdating || isCreating;
+
+  const [form, setForm] = useState<any>(() => ({
+    title: initial?.title ?? "",
+    description: initial?.description ?? "",
+    price: initial?.price ?? 0,
+    discountedPrice: initial?.discountedPrice ?? "",
+    rating: initial?.rating ?? 4.5,
+    reviews: initial?.reviews ?? 0,
+    inStock: initial?.inStock ?? true,
+    category: initial?.category?._id ?? "",
+    subCategory: initial?.subCategory?._id ?? "",
+  }));
+
+  const [selectedCategoryLabel, setSelectedCategoryLabel] = useState(initial?.category?.name ?? "");
+  const [selectedSubCategoryLabel, setSelectedSubCategoryLabel] = useState(initial?.subCategory?.name ?? "");
+
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imgPreview, setImgPreview] = useState<string>(getImageUrl(initial?.image));
+
+  useEffect(() => {
+    return () => {
+      if (imgPreview.startsWith("blob:")) URL.revokeObjectURL(imgPreview);
+    };
+  }, [imgPreview]);
 
   const handleImage = (file: File | null) => {
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const url = reader.result as string;
-      setImgPreview(url);
-      setForm((f) => ({ ...f, image: url }));
-    };
-    reader.readAsDataURL(file);
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+    setImageFile(file);
+    setImgPreview(URL.createObjectURL(file));
+  };
+
+  const categories = categoriesData?.docs ?? [];
+  const totalPages = categoriesData?.totalPages ?? 1;
+
+  const selectedCategory = useMemo(
+    () => categories.find((c:any) => c._id === form.category),
+    [categories, form.category],
+  );
+  const subCategoryOptions = selectedCategory?.subCategories ?? [];
+
+  const handleSelectCategory = (cat: any) => {
+    setForm((f:any) => ({ ...f, category: cat._id, subCategory: "" }));
+    setSelectedCategoryLabel(cat.name);
+    setSelectedSubCategoryLabel("");
+  };
+
+  const handleSelectSubCategory = (sub: any) => {
+    setForm((f:any) => ({ ...f, subCategory: sub._id }));
+    setSelectedSubCategoryLabel(sub.name);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!form.title.trim()) return toast.error("Title is required");
+    if (!form.category) return toast.error("Please select a category");
+    if (!form.subCategory) return toast.error("Please select a subcategory");
+    if (form.price < 0) return toast.error("Price must be positive");
+    if (form.discountedPrice !== "" && Number(form.discountedPrice) > form.price) {
+      return toast.error("Discounted price can't exceed price");
+    }
+    if (!initial && !imageFile) return toast.error("Please upload a product image");
+
+    const fd = new FormData();
+    fd.append("title", form.title.trim());
+    fd.append("description", form.description);
+    fd.append("category", form.category);
+    fd.append("subCategory", form.subCategory);
+    fd.append("price", String(form.price));
+    fd.append("discountedPrice", form.discountedPrice === "" ? "" : String(form.discountedPrice));
+    fd.append("rating", String(form.rating));
+    fd.append("reviews", String(form.reviews));
+    fd.append("inStock", String(form.inStock));
+    if (imageFile) fd.append("image", imageFile);
+
+    console.log(form.discountedPrice)
+    try {
+      if (initial) {
+        await updateProduct({ id: initial._id, body: fd }).unwrap();
+        toast.success("Product updated");
+      } else {
+        await addProduct(fd).unwrap();
+        toast.success("Product created");
+      }
+      onSave?.();
+      onClose();
+    } catch (err: any) {
+      toast.error(err?.data?.message || err?.data?.errors[0]?.msg || "Something went wrong");
+    }
   };
 
   return (
     <Modal title={initial ? "Edit product" : "New product"} onClose={onClose}>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!form.name.trim()) { toast.error("Name is required"); return; }
-          if (form.price < 0) { toast.error("Price must be positive"); return; }
-          const slug = form.slug || form.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-          onSave({ ...form, slug, tags: [form.category, form.subcategory] });
-        }}
-        className="space-y-4"
-      >
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Image + basic fields */}
         <div className="grid gap-4 sm:grid-cols-[120px_1fr]">
           <div>
             <label className="block text-xs font-medium text-muted-foreground">Image</label>
             <div className="mt-1 aspect-square overflow-hidden rounded-lg border border-border bg-surface">
-              <img src={imgPreview} alt="" className="h-full w-full object-cover" />
+              <img src={getImageUrl(imgPreview)} crossOrigin="anonymous" alt="" className="h-full w-full object-cover" />
             </div>
             <label className="mt-2 flex cursor-pointer items-center justify-center gap-1 rounded-md border border-dashed border-border py-2 text-xs hover:bg-secondary">
               <Upload className="h-3 w-3" /> Upload
-              <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImage(e.target.files?.[0] ?? null)} />
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => handleImage(e.target.files?.[0] ?? null)}
+              />
             </label>
           </div>
 
           <div className="space-y-3">
-            <Field label="Name" required value={form.name} onChange={(v) => setForm({ ...form, name: v })} />
-            <div className="grid gap-3 sm:grid-cols-2">
-              <SelectField
-                label="Category" value={form.category}
-                options={categories.map((c) => ({ value: c.slug, label: c.name }))}
-                onChange={(v) => setForm({ ...form, category: v as CategorySlug })}
+            <Field
+              label="Title"
+              required
+              value={form.title}
+              onChange={(v) => setForm((f:any) => ({ ...f, title: v }))}
+            />
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Field
+                label="Price"
+                type="number"
+                value={String(form.price)}
+                onChange={(v) => setForm((f:any) => ({ ...f, price: Number(v) }))}
               />
-              <Field label="Subcategory" value={form.subcategory} onChange={(v) => setForm({ ...form, subcategory: v })} />
+              <Field
+                label="Discounted price"
+                type="number"
+                value={form.discountedPrice === "" ? "" : String(form.discountedPrice)}
+                onChange={(v) => setForm((f:any) => ({ ...f, discountedPrice: v === "" ? "" : Number(v) }))}
+              />
             </div>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <Field label="Price" type="number" value={String(form.price)} onChange={(v) => setForm({ ...form, price: Number(v) })} />
-              <Field label="Compare at" type="number" value={form.compareAt ? String(form.compareAt) : ""} onChange={(v) => setForm({ ...form, compareAt: v ? Number(v) : undefined })} />
-              <Field label="Stock" type="number" value={String(form.stock)} onChange={(v) => setForm({ ...form, stock: Number(v) })} />
+
+               <div className="grid gap-2 sm:grid-cols-2">
+              <Field
+                label="Reviews"
+                type="number"
+                value={String(form.reviews)}
+                onChange={(v) => setForm((f:any) => ({ ...f, reviews: Number(v) }))}
+              />
+            <Field
+              label="Rating"
+              type="number"
+              value={String(form.rating)}
+              onChange={(v) => setForm((f:any) => ({ ...f, rating: Number(v) }))}
+            />
             </div>
             <label className="block">
               <span className="mb-1 block text-xs font-medium text-muted-foreground">Description</span>
               <textarea
                 value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                onChange={(e) => setForm((f:any) => ({ ...f, description: e.target.value }))}
                 rows={3}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
               />
             </label>
             <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} />
-              Visible on storefront
+              <input
+                type="checkbox"
+                checked={form.inStock}
+                onChange={(e) => setForm((f:any) => ({ ...f, inStock: e.target.checked }))}
+              />
+              In stock
             </label>
           </div>
         </div>
 
-        <div className="space-y-3 rounded-lg border border-border bg-surface p-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Gallery images</p>
-          <label className="block">
-            <span className="mb-1 block text-xs text-muted-foreground">Image URLs (one per line — up to 8)</span>
-            <textarea
-              value={galleryText}
-              onChange={(e) => {
-                setGalleryText(e.target.value);
-                const urls = e.target.value.split("\n").map((s) => s.trim()).filter(Boolean).slice(0, 8);
-                setForm({ ...form, images: urls });
-              }}
-              rows={3}
-              placeholder="https://example.com/image-1.jpg"
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
-            />
-          </label>
+        {/* Category picker (paginated) */}
+        <div className="border-t border-border pt-4">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">
+              Category
+              {selectedCategoryLabel && <span className="ml-1 text-foreground">— {selectedCategoryLabel}</span>}
+            </span>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-1 text-xs">
+                <button
+                  type="button"
+                  disabled={catPage <= 1}
+                  onClick={() => setCatPage((p) => p - 1)}
+                  className="rounded p-1 disabled:opacity-30 hover:bg-secondary"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                </button>
+                <span className="text-muted-foreground">{catPage} / {totalPages}</span>
+                <button
+                  type="button"
+                  disabled={catPage >= totalPages}
+                  onClick={() => setCatPage((p) => p + 1)}
+                  className="rounded p-1 disabled:opacity-30 hover:bg-secondary"
+                >
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {isLoadingCategories ? (
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+              {Array.from({ length: 10 }).map((_, i) => (
+                <div key={i} className="aspect-square animate-pulse rounded-lg bg-secondary" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+              {categories.map((cat:any) => {
+                const isSelected = form.category === cat._id;
+                return (
+                  <button
+                    type="button"
+                    key={cat._id}
+                    onClick={() => handleSelectCategory(cat)}
+                    className={`group relative flex flex-col items-center gap-1 rounded-lg border p-2 text-center transition-colors ${
+                      isSelected ? "border-brand bg-brand/10" : "border-border hover:bg-secondary"
+                    }`}
+                  >
+                    {isSelected && (
+                      <span className="absolute right-1 top-1 rounded-full bg-brand p-0.5">
+                        <Check className="h-2.5 w-2.5 text-white" />
+                      </span>
+                    )}
+                    <div className="aspect-square w-full overflow-hidden rounded-md bg-surface">
+                      {cat.image && (
+                        <img src={getImageUrl(cat.image)} crossOrigin="anonymous" alt="category" className="h-full w-full object-cover" />
+                      )}
+                    </div>
+                    <span className="line-clamp-1 text-[11px] capitalize">{cat.name}</span>
+                  </button>
+                );
+              })}
+              {categories.length === 0 && (
+                <p className="col-span-full py-4 text-center text-xs text-muted-foreground">
+                  No categories found.
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
-        <div className="space-y-3 rounded-lg border border-border bg-surface p-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">SEO</p>
-          <Field label="SEO title" value={form.seoTitle ?? ""} onChange={(v) => setForm({ ...form, seoTitle: v })} />
-          <label className="block">
-            <span className="mb-1 block text-xs font-medium text-muted-foreground">Meta description</span>
-            <textarea
-              value={form.metaDescription ?? ""}
-              onChange={(e) => setForm({ ...form, metaDescription: e.target.value })}
-              rows={2}
-              maxLength={160}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
-            />
-            <span className="mt-1 block text-[10px] text-muted-foreground">{(form.metaDescription ?? "").length}/160</span>
-          </label>
-          <Field label="Focus keyword" value={form.focusKeyword ?? ""} onChange={(v) => setForm({ ...form, focusKeyword: v })} />
-          <Field label="URL slug (auto from name if blank)" value={form.slug} onChange={(v) => setForm({ ...form, slug: v })} />
-        </div>
+        {/* Subcategory picker — depends on selected category */}
+        {form.category && (
+          <div>
+            <span className="mb-2 block text-xs font-medium text-muted-foreground">
+              Subcategory
+              {selectedSubCategoryLabel && (
+                <span className="ml-1 text-foreground">— {selectedSubCategoryLabel}</span>
+              )}
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {subCategoryOptions.map((sub:any) => {
+                const isSelected = form.subCategory === sub._id;
+                return (
+                  <button
+                    type="button"
+                    key={sub._id}
+                    onClick={() => handleSelectSubCategory(sub)}
+                    className={`rounded-full border px-3 py-1 text-xs capitalize transition-colors ${
+                      isSelected ? "border-brand bg-brand text-white" : "border-border hover:bg-secondary"
+                    }`}
+                  >
+                    {sub.name}
+                  </button>
+                );
+              })}
+              {subCategoryOptions.length === 0 && (
+                <p className="text-xs text-muted-foreground">This category has no subcategories yet.</p>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="flex justify-end gap-2 border-t border-border pt-4">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="premium">{initial ? "Save changes" : "Create product"}</Button>
+          <Button type="submit" variant="premium" disabled={isSaving}>
+            {isSaving ? "Saving..." : initial ? "Save changes" : "Create product"}
+          </Button>
         </div>
       </form>
     </Modal>
   );
 }
+
 
 function BulkImport({ onClose, onImport }: { onClose: () => void; onImport: (rows: Omit<AdminProduct, "id">[]) => void }) {
   const [preview, setPreview] = useState<ReturnType<typeof validateProductRows> | null>(null);
