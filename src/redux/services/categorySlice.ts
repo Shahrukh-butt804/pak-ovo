@@ -42,6 +42,11 @@ export const categorySlice = createApi({
       transformResponse: (response: any) => response?.data,
     }),
 
+    getCategoryBySlug: builder.query({
+      query: (slug) => `/slug/${slug}`,
+      transformResponse: (response: any) => response?.data,
+    }),
+
     addToCategory: builder.mutation({
       query: (body) => ({
         url: "/add-product",
@@ -71,6 +76,7 @@ export const {
   useGetAllCategoriesQuery,
   useGetAllCategoriesWithSubCategoriesQuery,
   useGetCategoryByIdQuery,
+  useGetCategoryBySlugQuery,
   useAddToCategoryMutation,
   useUpdateCategoryMutation,
   useDeleteFromCategoryMutation,

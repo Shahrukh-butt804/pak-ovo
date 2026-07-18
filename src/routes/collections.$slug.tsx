@@ -1,6 +1,8 @@
 import { ProductGrid } from "@/components/product/ProductCard";
+import { UPLOADS_URL } from "@/constants/api";
 import { findCategory } from "@/data/categories";
 import { createFileRoute, notFound } from "@/lib/router-compat";
+import { useGetCategoryBySlugQuery } from "@/redux/services/categorySlice";
 import { useGetAllProductsQuery } from "@/redux/services/productSlice";
 import { useGetAllSubCategoriesQuery } from "@/redux/services/subCategorySlice";
 import { ChevronDown } from "lucide-react";
@@ -58,6 +60,8 @@ function Collection() {
   const [subCategorySlug, setSubCategorySlug] = useState<string>("");
   const [page, setPage] = useState(1);
   const limit = 8;
+
+  const { data: category, isLoading: isLoadingCategory } = useGetCategoryBySlugQuery(slug);
 
   const { data: subCategories, isLoading: isLoadingSubCategories } = useGetAllSubCategoriesQuery({
     slug,
@@ -117,23 +121,23 @@ return (
             / {categoryLabel}
           </nav>
           {/* Uncomment once tagline is available from a category fetch */}
-          {/* <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-brand">
-            {category?.tagline}
-          </p> */}
+          <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-brand">
+            Time, beautifully kept
+          </p>
           <h1 className="mt-1 font-display text-3xl font-bold md:text-4xl">{categoryLabel}</h1>
           {/* Uncomment once description is available from a category fetch */}
-          {/* <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{category?.description}</p> */}
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">Hand-picked watches — classic dress pieces, modern smartwatches and statement luxury timepieces.</p>
         </div>
         {/* Uncomment once image is available from a category fetch */}
-        {/* <div className="hidden overflow-hidden rounded-2xl border border-border md:block">
-          <img src={category?.image} alt={categoryLabel} className="h-72 w-full object-cover" />
-        </div> */}
+        <div className="hidden overflow-hidden rounded-2xl border border-border md:block">
+          <img src={UPLOADS_URL + category?.image} crossOrigin="anonymous" alt={categoryLabel} className="h-72 w-full object-cover" />
+        </div>
       </div>
     </section>
 
     <section className="container-px mx-auto max-w-7xl py-10">
       <div className="flex flex-wrap items-center gap-2">
-        {!isLoadingSubCategories && (subCategories?.docs?.length ?? 0) > 0 && (
+        {!(isLoadingSubCategories || isLoadingCategory) && (subCategories?.docs?.length ?? 0) > 0 && (
           <>
             <button
               type="button"

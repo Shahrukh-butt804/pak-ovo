@@ -11,7 +11,7 @@ export const productSlice = createApi({
   }),
   endpoints: (builder) => ({
     getAllProducts: builder.query({
-      query: ({ page, limit, keyword, status, category, sortBy }) => ({
+      query: ({ page, limit, keyword, status, category,subCategory, sortBy }) => ({
         url: "/",
         method: "GET",
         params: {
@@ -20,6 +20,7 @@ export const productSlice = createApi({
           keyword,
           status,
           category,
+          subCategory,
           sortBy,
         },
       }),

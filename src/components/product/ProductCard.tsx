@@ -12,6 +12,7 @@ import { Heart, ShoppingBag, Star } from "lucide-react";
 import { toast } from "sonner";
 
 export function ProductCard({ product, refetch }: { product: any; refetch?: any }) {
+  console.log("🚀 ~ ProductCard ~ product:", product.wished)
   // const toggleWish = useWishlist((s) => s.toggle);
   const [addToWishlist, { isLoading: isAddingToWishlist }] = useAddProductToWishlistMutation();
   const [deleteToWishlist, { isLoading: isdeleteingToWishlist }] = useDeleteFromWishlistMutation();
