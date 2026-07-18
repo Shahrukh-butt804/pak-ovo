@@ -19,20 +19,19 @@ export function Header() {
   const setCartOpen = useCart((s) => s.setOpen);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [q, setQ] = useState("");
+  const username = useSelector(selectUser)?.fullName;
 
-  const { data: cart } = useGetMyCartQuery({});
-  const { data: wishlist } = useGetMyWishlistQuery({});
+  const { data: cart } = useGetMyCartQuery({skip:!username}, { refetchOnMountOrArgChange: true });
+  const { data: wishlist } = useGetMyWishlistQuery({skip:!username}, { refetchOnMountOrArgChange: true });
 
   const [logoutuser, { isLoading }] = useLogoutMutation();
 
-  const { data: categoriesResponse } = useGetAllCategoriesQuery({});
+  const { data: categoriesResponse } = useGetAllCategoriesQuery({skip:!username}, { refetchOnMountOrArgChange: true });
 
   const categories = useMemo(
     () => (categoriesResponse?.docs ?? categoriesResponse ?? []) as any[],
     [categoriesResponse],
   );
-
-  const username = useSelector(selectUser)?.fullName;
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,8 +48,11 @@ export function Header() {
     if (res?.data?.success) {
       dispatch(logout());
       toast.success(res?.data?.message || "Operation successful");
+      navigate({ to: "/auth/login" });
     } else {
-      toast.error(res?.error?.data?.message || res?.error?.data?.errors[0].msg || "something went wrong");
+      toast.error(
+        res?.error?.data?.message || res?.error?.data?.errors[0].msg || "something went wrong",
+      );
     }
   };
 
@@ -113,82 +115,88 @@ export function Header() {
             className="h-11 w-full rounded-full border border-input bg-secondary/50 pl-10 pr-4 text-sm outline-none transition-colors focus:border-brand focus:bg-background"
           />
         </form> */}
-
-        <nav className="ml-auto flex items-center gap-1 lg:ml-2">
-          <Link
-            to="/search"
-            aria-label="Search"
-            className="lg:hidden p-2 hover:text-brand transition-colors"
-          >
-            <Search className="h-5 w-5" />
-          </Link>
-          <Link
-            to="/wishlist"
-            aria-label="Wishlist"
-            className="relative p-2 hover:text-brand transition-colors"
-          >
-            <Heart className="h-5 w-5" />
-            {wishlist?.products?.length > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-bold text-gold-foreground">
-                {wishlist?.products?.length || 0}
-              </span>
-            )}
-          </Link>
-          <Link
-            to="/account"
-            aria-label="Account"
-            className="hidden p-2 hover:text-brand transition-colors sm:block"
-          >
-            <User className="h-5 w-5" />
-          </Link>
-          <button
-            onClick={() => setCartOpen(true)}
-            aria-label="Cart"
-            className="relative p-2 hover:text-brand transition-colors"
-          >
-            <ShoppingBag className="h-5 w-5" />
-            {cart?.products?.length > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-bold text-brand-foreground">
-                {cart?.products?.length || 0}
-              </span>
-            )}
-          </button>
-        </nav>
+        {username && (
+          <nav className="ml-auto flex items-center gap-1 lg:ml-2">
+            <Link
+              to="/search"
+              aria-label="Search"
+              className="lg:hidden p-2 hover:text-brand transition-colors"
+            >
+              <Search className="h-5 w-5" />
+            </Link>
+            <Link
+              to="/wishlist"
+              aria-label="Wishlist"
+              className="relative p-2 hover:text-brand transition-colors"
+            >
+              <Heart className="h-5 w-5" />
+              {wishlist?.products?.length > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-bold text-gold-foreground">
+                  {wishlist?.products?.length || 0}
+                </span>
+              )}
+            </Link>
+            <Link
+              to="/account"
+              aria-label="Account"
+              className="hidden p-2 hover:text-brand transition-colors sm:block"
+            >
+              <User className="h-5 w-5" />
+            </Link>
+            <button
+              onClick={() => setCartOpen(true)}
+              aria-label="Cart"
+              className="relative p-2 hover:text-brand transition-colors"
+            >
+              <ShoppingBag className="h-5 w-5" />
+              {cart?.products?.length > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-bold text-brand-foreground">
+                  {cart?.products?.length || 0}
+                </span>
+              )}
+            </button>
+          </nav>
+        )}
       </div>
 
-      <div className="hidden border-t border-border lg:block relative">
-        <div className="container-px mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-6 gap-y-2 py-3 text-sm font-medium xl:gap-x-8">
-          <Link to="/" className="hover:text-brand transition-colors">
-            Home
-          </Link>
-          <div className="group">
-            <Link to="/shop" className="flex items-center gap-1 hover:text-brand transition-colors">
-              Shop
+      {username && (
+        <div className="hidden border-t border-border lg:block relative">
+          <div className="container-px mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-6 gap-y-2 py-3 text-sm font-medium xl:gap-x-8">
+            <Link to="/" className="hover:text-brand transition-colors">
+              Home
             </Link>
-            <MegaMenu />
-          </div>
-          {categories.map((c) => (
-            <Link
-              key={c.slug}
-              to="/collections/$slug"
-              params={{ slug: c.slug }}
-              className="hover:text-brand transition-colors"
-            >
-              {c.name}
-            </Link>
-          ))}
-          {/* <Link to="/blog" className="hover:text-brand transition-colors">
+            <div className="group">
+              <Link
+                to="/shop"
+                className="flex items-center gap-1 hover:text-brand transition-colors"
+              >
+                Shop
+              </Link>
+              <MegaMenu />
+            </div>
+            {categories.map((c) => (
+              <Link
+                key={c.slug}
+                to="/collections/$slug"
+                params={{ slug: c.slug }}
+                className="hover:text-brand transition-colors"
+              >
+                {c.name}
+              </Link>
+            ))}
+            {/* <Link to="/blog" className="hover:text-brand transition-colors">
             Journal
           </Link> */}
-          <Link
-            to="/shop"
-            search={{ filter: "sale" }}
-            className="text-destructive font-semibold hover:opacity-80 transition-opacity"
-          >
-            Sale
-          </Link>
+            <Link
+              to="/shop"
+              search={{ filter: "sale" }}
+              className="text-destructive font-semibold hover:opacity-80 transition-opacity"
+            >
+              Sale
+            </Link>
+          </div>
         </div>
-      </div>
+      )}
 
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">

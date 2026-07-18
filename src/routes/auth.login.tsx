@@ -41,11 +41,9 @@ function Login() {
     const res: any = await login({ email, password , role: "user" });
 
     if (res?.data?.success) {
-      dispatch(
-      setUser({ ...res?.data?.data?.user, token: res?.data?.data?.accessToken }),
-    );
       toast.success(res?.data?.message || "Operation successful");
-      navigate({ to: "/account" });
+      dispatch(setUser({ ...res?.data?.data?.user, token: res?.data?.data?.accessToken }));
+      navigate({ to: "/" });
     } else {
       toast.error(
         res?.error?.data?.message || res?.error?.data?.errors[0].msg || "something went wrong",

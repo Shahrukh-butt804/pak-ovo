@@ -122,10 +122,10 @@ export function App() {
       <main className="min-h-[60vh] pb-20 lg:pb-0">
         <Routes>
           <Route path="/" element={renderRoute(IndexRoute)} />
-          <Route path="/shop" element={renderRoute(ShopRoute)} />
           <Route path="/search" element={renderRoute(SearchRoute)} />
           <Route path="/cart" element={renderRoute(CartRoute)} />
           <Route path="/wishlist" element={renderRoute(WishlistRoute)} />
+          <Route path="/shop" element={<PrivateRoute>{renderRoute(ShopRoute)}</PrivateRoute>} />
           <Route path="/checkout" element={<PrivateRoute>{renderRoute(CheckoutRoute)}</PrivateRoute>} />
           <Route path="/track" element={<PrivateRoute>{renderRoute(TrackRoute)}</PrivateRoute>} />
           <Route path="/order-details/:id" element={<PrivateRoute>{renderRoute(OrderDetailRoute)}</PrivateRoute>} />
