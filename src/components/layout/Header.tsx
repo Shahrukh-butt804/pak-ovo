@@ -49,11 +49,8 @@ export function Header() {
     if (res?.data?.success) {
       dispatch(logout());
       toast.success(res?.data?.message || "Operation successful");
-      navigate({ to: "/account" });
     } else {
-      toast.error(
-        res?.error?.data?.message || res?.error?.data?.errors[0].msg || "something went wrong",
-      );
+      toast.error(res?.error?.data?.message || res?.error?.data?.errors[0].msg || "something went wrong");
     }
   };
 
