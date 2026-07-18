@@ -143,13 +143,15 @@ const Table = ({
                       ),
                     )}
 
-                    <td className="px-4 py-3 text-right flex justify-between items-center">
-                      <button
+                    <td className={`px-4 py-3 text-right flex ${onEdit ? 'justify-between': 'justify-center'} items-center`}>
+                      {onEdit && (
+                        <button
                         onClick={() => onEdit(row)}
                         className="inline-flex items-center justify-center rounded-full  p-2 text-black transition-colors  removebgColor"
-                      >
+                        >
                         <Pencil className="h-4 w-4 " />
                       </button>
+                      )}
                       <button
                         onClick={() => onDelete(row._id)}
                         disabled={isDeleting && deletingItemId === row._id}
@@ -158,7 +160,11 @@ const Table = ({
                         {isDeleting && deletingItemId === row._id ? (
                           <Spinner />
                         ) : (
-                          <Trash2 className="h-4 w-4" color="red" />
+                          Boolean(row.isActive) ? 
+                            <Trash2 className="h-4 w-4" color="green" />
+                            :
+                            <Trash2 className="h-4 w-4" color="red" />
+                          
                         )}
                       </button>
                     </td>

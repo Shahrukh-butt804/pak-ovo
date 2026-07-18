@@ -4,7 +4,7 @@ import { prepareHeaders } from "../prepareHeader/preapareHeader";
 
 export const userManagementSlice = createApi({
     reducerPath: "userManagementSlice",
-    baseQuery: fetchBaseQuery({ baseUrl: BASE_URL + "/admin/user-management", credentials: 'include' , prepareHeaders }),
+    baseQuery: fetchBaseQuery({ baseUrl: BASE_URL + "/user-management", credentials: 'include' , prepareHeaders }),
     tagTypes: ["User"],
     endpoints: (builder) => ({
         getReport: builder.query({
@@ -22,14 +22,15 @@ export const userManagementSlice = createApi({
 
         getAllUsers: builder.query({
             query: ({ page, limit, keyword }) => ({
-                url: "/get-all-users",
+                url: "/",
                 method: "GET",
                 params: {
                     page,
                     limit,
                     keyword
                 }
-            })
+            }),
+            transformResponse : (res) => res?.data
 
         }),
         getUserById: builder.query({
@@ -39,8 +40,8 @@ export const userManagementSlice = createApi({
 
         }),
         toggleUserStatus: builder.mutation({
-            query: ({ id }) => ({
-                url: `/toggle-user-status/${id}`,
+            query: (id) => ({
+                url: `/toggle-status/${id}`,
                 method: "PUT",
             }),
             invalidatesTags: ["User"],

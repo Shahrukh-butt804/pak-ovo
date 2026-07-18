@@ -19,6 +19,7 @@ import { logout, selectUser, setUser } from "@/redux/reducers/userSlice";
 import { useLoginMutation } from "@/redux/services/authSlice";
 import { useAddToCategoryMutation, useDeleteCategoryMutation, useGetAllCategoriesWithSubCategoriesQuery, useUpdateCategoryMutation } from "@/redux/services/categorySlice";
 import { useAddProductMutation, useDeleteProductMutation, useGetAllProductsQuery, useUpdateProductMutation } from "@/redux/services/productSlice";
+import { useGetAllUsersQuery, useToggleUserStatusMutation } from "@/redux/services/userManagement";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import {
@@ -314,6 +315,7 @@ function ProductsView() {
   const handleDelete = async (productId:any) => {
     if(!productId){
       toast.error("Product Id is Required");
+      return
     }
     setDeletingItemId(productId)
     const res: any = await deleteProduct(productId);
@@ -876,9 +878,37 @@ function OrdersView() {
 
 /* ---------- Customers ---------- */
 function CustomersView() {
-  const { customers, deleteCustomer } = useAdmin();
-  const [q, setQ] = useState("");
-  const filtered = customers.filter((c) => !q || c.name.toLowerCase().includes(q.toLowerCase()) || c.email.toLowerCase().includes(q.toLowerCase()));
+ const [toggledUserId, setToggledUserId] = useState("");
+
+    const [pagination, setPagination] = useState({
+        page: 1,
+        limit: 10,
+        keyword: ""
+    })
+    const { data , isLoading, refetch } = useGetAllUsersQuery({ ...pagination }, { refetchOnMountOrArgChange: true})
+    console.log("🚀 ~ CustomersView ~ data:", data)
+    const [toggleuser, {isLoading : isToggleLoading}] = useToggleUserStatusMutation()
+
+
+  const handleDelete = async (userId:any) => {
+    if(!userId) {
+      toast.error("User Id is Required");
+      return
+    }
+    setToggledUserId(userId)
+    const res: any = await toggleuser(userId);
+    if (res?.data?.success) {
+      toast.success(res?.data?.message || "Operation successful");
+      refetch()
+    } else {
+      toast.error( res?.error?.data?.message || res?.error?.data?.errors[0].msg || "something went wrong",);
+    }
+    setToggledUserId("")
+  };
+
+  
+
+
 
   const exportPdf = () => {
     const doc = new jsPDF();
@@ -887,26 +917,34 @@ function CustomersView() {
     autoTable(doc, {
       startY: 28,
       head: [["ID", "Name", "Email", "Joined", "Orders", "Spent"]],
-      body: filtered.map((c) => [c.id, c.name, c.email, c.joined, c.orders, formatPrice(c.spent)]),
+      // body: filtered.map((c) => [c.id, c.name, c.email, c.joined, c.orders, formatPrice(c.spent)]),
       styles: { fontSize: 9 },
       headStyles: { fillColor: [15, 27, 61] },
     });
     doc.save("customers.pdf");
-    toast.success(`Exported ${filtered.length} customers to PDF`);
+    // toast.success(`Exported ${filtered.length} customers to PDF`);
   };
 
   const exportCsv = () => {
     const rows = [["id", "name", "email", "joined", "orders", "spent"].join(",")];
-    filtered.forEach((c) => rows.push([c.id, `"${c.name}"`, c.email, c.joined, c.orders, c.spent].join(",")));
+    // filtered.forEach((c) => rows.push([c.id, `"${c.name}"`, c.email, c.joined, c.orders, c.spent].join(",")));
     download("customers.csv", "text/csv", rows.join("\n"));
-    toast.success(`Exported ${filtered.length} customers to CSV`);
+    // toast.success(`Exported ${filtered.length} customers to CSV`);
   };
+
+
+  if (isLoading) {
+      return (
+          <div className='grid place-content-center'>
+              <Spinner size='lg' />
+          </div>
+      )
+  }
 
   return (
     <>
       <ToolbarCard
-        title="Customers" count={`${customers.length} total`}
-        search={{ value: q, onChange: setQ, placeholder: "Search by name or email…" }}
+        title="Customers" count={`Total ${data.totalDocs || 0} Customers`}
         actions={
           <>
             <Button variant="outline" size="sm" onClick={exportCsv}><Download className="h-4 w-4" /> CSV</Button>
@@ -916,256 +954,18 @@ function CustomersView() {
       />
 
       <div className="overflow-x-auto rounded-2xl border border-border bg-card">
-        <table className="w-full min-w-160 text-sm">
-          <thead className="bg-surface text-left text-xs uppercase tracking-wider text-muted-foreground">
-            <tr>
-              <th className="p-3">Customer</th><th className="p-3">Joined</th>
-              <th className="p-3">Orders</th><th className="p-3">Lifetime spend</th><th className="p-3 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {filtered.map((c) => (
-              <tr key={c.id}>
-                <td className="p-3">
-                  <p className="font-medium">{c.name}</p>
-                  <p className="text-xs text-muted-foreground">{c.email}</p>
-                </td>
-                <td className="p-3 text-muted-foreground">{c.joined}</td>
-                <td className="p-3">{c.orders}</td>
-                <td className="p-3">{formatPrice(c.spent)}</td>
-                <td className="p-3 text-right">
-                  <button onClick={() => { if (confirm(`Remove ${c.name}?`)) { deleteCustomer(c.id); toast.success("Customer removed"); } }} className="rounded-md p-1.5 text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {filtered.length === 0 && <p className="p-8 text-center text-sm text-muted-foreground">No customers match.</p>}
+     <Table
+                tableData={{ data: data.docs, exlucdedFields: ["__v", "updatedAt", "_id", "refreshToken", "password", "otp", "role","reviews","rating"] }}
+                setPagination={setPagination}
+                pagination={data || {}}
+                onDelete={handleDelete}
+                isDeleting={isToggleLoading}
+                deletingItemId={toggledUserId}
+            />
       </div>
     </>
   );
 }
-
-/* ---------- Categories ---------- */
-// function CategoriesView() {
-//   const [editing, setEditing] = useState<AdminCategory | null>(null);
-//   const [creating, setCreating] = useState(false);
-//   const {data:categories , isLoading} = useGetAllCategoriesWithSubCategoriesQuery({})
-
-
-//   const [addCategory, {isLoading:isAdding}] = useAddToCategoryMutation()
-//   const [updateCategory, {isLoading:isUpdating}] = useUpdateCategoryMutation()
-//   const [deleteCategory, {isLoading:isDeleting}] = useDeleteCategoryMutation()
-
-
-  
-//   if (isLoading) {
-//       return (
-//           <div className='grid place-content-center'>
-//               <Spinner size='lg' />
-//           </div>
-//       )
-//   }
-
-//   return (
-//     <>
-//       <ToolbarCard
-//         title="Categories"
-//         count={`${categories.totalDocs} total`}
-//         actions={
-//           <Button variant="premium" size="sm" onClick={() => setCreating(true)}>
-//             <Plus className="h-4 w-4" /> New category
-//           </Button>
-//         }
-//       />
-//       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-//         {categories?.docs?.map((c:any) => {
-//           return (
-//             <div key={c.slug} className="group overflow-hidden rounded-2xl border border-border bg-card">
-//               <div className="relative h-32 w-full overflow-hidden">
-//                 <img src={UPLOADS_URL + c.image}crossOrigin="anonymous" alt={c.name} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
-//                 <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1 bg-linear-to-t from-black/70 to-transparent p-2">
-//                   <button
-//                     onClick={() => setEditing(c)}
-//                     className="rounded-md bg-background/90 p-1.5 text-foreground hover:bg-background"
-//                     aria-label="Edit"
-//                   ><Pencil className="h-4 w-4" /></button>
-//                   <button
-//                     onClick={() => {
-//                       if (confirm(`Delete category "${c.name}"? Products in this category will keep their tag.`)) {
-//                         deleteCategory(c.slug);
-//                         toast.success("Category deleted");
-//                       }
-//                     }}
-//                     className="rounded-md bg-background/90 p-1.5 text-destructive hover:bg-background"
-//                     aria-label="Delete"
-//                   ><Trash2 className="h-4 w-4" /></button>
-//                 </div>
-//               </div>
-//               <div className="p-4">
-//                 <p className="font-semibold">{c.name}</p>
-//                 <p className="mt-2 text-xs text-muted-foreground line-clamp-2">{c.description}</p>
-//                 <p className="mt-3 text-xs text-muted-foreground">
-//                   <span className="font-semibold text-foreground">{c?.subCategories?.length || 0} </span> Sub Categories {" "}
-//                 </p>
-//               </div>
-//             </div>
-//           );
-//         })}
-//       </div>
-
-//       {(creating || editing) && (
-//         <CategoryForm
-//           initial={editing}
-//           existingSlugs={categories.map((c:any) => c.slug)}
-//           onClose={() => { setCreating(false); setEditing(null); }}
-//           onSave={(data:any) => {
-//             if (editing) {
-//               updateCategory({data});
-//               toast.success("Category updated");
-//             } else {
-//               addCategory(data);
-//               toast.success("Category created");
-//             }
-//             setCreating(false); setEditing(null);
-//           }}
-//         />
-//       )}
-//     </>
-//   );
-// }
-
-// function CategoryForm({
-//   initial, existingSlugs, onClose, onSave,
-// }: {
-//   initial: AdminCategory | null;
-//   existingSlugs: string[];
-//   onClose: () => void;
-//   onSave: (data: AdminCategory) => void;
-// }) {
-//   const [form, setForm] = useState<AdminCategory>(
-//     initial ?? {
-//       slug: "", name: "", tagline: "",
-//       description: "", image: catFallback, subcategories: [],
-//       seoTitle: "", metaDescription: "",
-//     },
-//   );
-//   const [subInput, setSubInput] = useState("");
-
-//   const handleImage = (file: File | null) => {
-//     if (!file) return;
-//     const reader = new FileReader();
-//     reader.onload = () => setForm((f) => ({ ...f, image: reader.result as string }));
-//     reader.readAsDataURL(file);
-//   };
-
-//   const addSub = () => {
-//     const v = subInput.trim();
-//     if (!v) return;
-//     if (form.subcategories.includes(v)) { toast.error("Already added"); return; }
-//     setForm({ ...form, subcategories: [...form.subcategories, v] });
-//     setSubInput("");
-//   };
-
-//   return (
-//     <Modal title={initial ? "Edit category" : "New category"} onClose={onClose}>
-//       <form
-//         onSubmit={(e) => {
-//           e.preventDefault();
-//           const name = form.name.trim();
-//           if (!name) { toast.error("Name is required"); return; }
-//           const slug = (form.slug || name).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-//           if (!initial && existingSlugs.includes(slug)) { toast.error("Slug already in use"); return; }
-//           onSave({ ...form, name, slug });
-//         }}
-//         className="space-y-4"
-//       >
-//         <div className="grid gap-4 sm:grid-cols-[140px_1fr]">
-//           <div>
-//             <label className="block text-xs font-medium text-muted-foreground">Image</label>
-//             <div className="mt-1 aspect-square overflow-hidden rounded-lg border border-border bg-surface">
-//               <img src={form.image} alt="" className="h-full w-full object-cover" />
-//             </div>
-//             <label className="mt-2 flex cursor-pointer items-center justify-center gap-1 rounded-md border border-dashed border-border py-2 text-xs hover:bg-secondary">
-//               <Upload className="h-3 w-3" /> Upload
-//               <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImage(e.target.files?.[0] ?? null)} />
-//             </label>
-//           </div>
-//           <div className="space-y-3">
-//             <Field label="Name" required value={form.name} onChange={(v) => setForm({ ...form, name: v })} />
-//             <Field
-//               label={initial ? "Slug (read-only)" : "Slug (auto from name if blank)"}
-//               value={form.slug}
-//               onChange={(v) => setForm({ ...form, slug: v })}
-//             />
-//             <Field label="Tagline" value={form.tagline} onChange={(v) => setForm({ ...form, tagline: v })} />
-//             <label className="block">
-//               <span className="mb-1 block text-xs font-medium text-muted-foreground">Description</span>
-//               <textarea
-//                 value={form.description}
-//                 onChange={(e) => setForm({ ...form, description: e.target.value })}
-//                 rows={3}
-//                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
-//               />
-//             </label>
-//           </div>
-//         </div>
-
-//         <div>
-//           <label className="block text-xs font-medium text-muted-foreground">Subcategories</label>
-//           <div className="mt-2 flex flex-wrap gap-2">
-//             {form.subcategories.map((s) => (
-//               <span key={s} className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-xs">
-//                 {s}
-//                 <button
-//                   type="button"
-//                   onClick={() => setForm({ ...form, subcategories: form.subcategories.filter((x) => x !== s) })}
-//                   className="text-muted-foreground hover:text-destructive"
-//                   aria-label={`Remove ${s}`}
-//                 ><X className="h-3 w-3" /></button>
-//               </span>
-//             ))}
-//             {form.subcategories.length === 0 && (
-//               <span className="text-xs text-muted-foreground">No subcategories yet.</span>
-//             )}
-//           </div>
-//           <div className="mt-2 flex gap-2">
-//             <input
-//               value={subInput}
-//               onChange={(e) => setSubInput(e.target.value)}
-//               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addSub(); } }}
-//               placeholder="Add subcategory and press Enter"
-//               className="h-9 flex-1 rounded-md border border-input bg-background px-3 text-sm outline-none focus:border-brand"
-//             />
-//             <Button type="button" variant="outline" size="sm" onClick={addSub}>Add</Button>
-//           </div>
-//         </div>
-
-//         <div className="space-y-3 rounded-lg border border-border bg-surface p-4">
-//           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">SEO</p>
-//           <Field label="SEO title" value={form.seoTitle ?? ""} onChange={(v) => setForm({ ...form, seoTitle: v })} />
-//           <label className="block">
-//             <span className="mb-1 block text-xs font-medium text-muted-foreground">Meta description</span>
-//             <textarea
-//               value={form.metaDescription ?? ""}
-//               onChange={(e) => setForm({ ...form, metaDescription: e.target.value })}
-//               rows={2}
-//               maxLength={160}
-//               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
-//             />
-//             <span className="mt-1 block text-[10px] text-muted-foreground">{(form.metaDescription ?? "").length}/160</span>
-//           </label>
-//         </div>
-
-//         <div className="flex justify-end gap-2 border-t border-border pt-4">
-//           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-//           <Button type="submit" variant="premium">{initial ? "Save changes" : "Create category"}</Button>
-//         </div>
-//       </form>
-//     </Modal>
-//   );
-// }
-
 
 
 interface SubCategory {
