@@ -12,7 +12,6 @@ import { Heart, ShoppingBag, Star } from "lucide-react";
 import { toast } from "sonner";
 
 export function ProductCard({ product, refetch }: { product: any; refetch?: any }) {
-  console.log("🚀 ~ ProductCard ~ product:", product.wished)
   // const toggleWish = useWishlist((s) => s.toggle);
   const [addToWishlist, { isLoading: isAddingToWishlist }] = useAddProductToWishlistMutation();
   const [deleteToWishlist, { isLoading: isdeleteingToWishlist }] = useDeleteFromWishlistMutation();
@@ -52,8 +51,8 @@ export function ProductCard({ product, refetch }: { product: any; refetch?: any 
   return (
     <div className="group relative flex flex-col">
       <Link
-        to="/products/$slug"
-        params={{ slug: product?.category?.slug }}
+        to={`/products/${product?.slug}`}
+        params={{ slug: product?.slug }}
         className="relative aspect-4/5 overflow-hidden rounded-xl bg-surface"
       >
         <img
