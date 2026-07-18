@@ -176,7 +176,11 @@ function Shop() {
         <Link
           to="/shop"
           search={{ q: keyword || undefined, sort, filter: undefined, cat: undefined, page: 1 }}
-          className="rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:border-brand hover:text-brand"
+         className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
+                      !categorySlug
+                        ? "border-brand text-brand"
+                        : "border-border text-foreground hover:border-brand hover:text-brand"
+                    }`}
         >
           All
         </Link>
@@ -192,7 +196,12 @@ function Shop() {
               category: category.slug,
               page: 1,
             }}
-            className="rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:border-brand hover:text-brand"
+               className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
+                      categorySlug === category.slug
+                        ? "border-brand text-brand"
+                        : "border-border text-foreground hover:border-brand hover:text-brand"
+                    }`}
+            // className="rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:border-brand hover:text-brand"
           >
             {category.name}
           </Link>
@@ -286,12 +295,14 @@ function normalizeProduct(item: any, index: number, fallbackCategory: string): a
       ? Number(item.compareAt)
       : undefined;
 
+  const subCategory = item.subCategory.name ?? "N/A";
+
   return {
     id: String(item._id ?? item.id ?? `${category}-${index + 1}`),
     slug: String(item.slug ?? slugify(name) ?? `product-${index + 1}`),
     name,
     category: category as Product["category"],
-    subcategory: String(category),
+    subCategory: String(subCategory),
     price,
     compareAt,
     rating: Number(item.rating ?? 4.5),

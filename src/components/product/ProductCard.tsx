@@ -12,7 +12,6 @@ import { Heart, ShoppingBag, Star } from "lucide-react";
 import { toast } from "sonner";
 
 export function ProductCard({ product, refetch }: { product: any; refetch?: any }) {
-  // const toggleWish = useWishlist((s) => s.toggle);
   const [addToWishlist, { isLoading: isAddingToWishlist }] = useAddProductToWishlistMutation();
   const [deleteToWishlist, { isLoading: isdeleteingToWishlist }] = useDeleteFromWishlistMutation();
   const wished = product.wished ?? false;
@@ -94,7 +93,7 @@ export function ProductCard({ product, refetch }: { product: any; refetch?: any 
       </Link>
       <div className="mt-3 px-1">
         <p className="text-xs uppercase tracking-wider text-muted-foreground">
-          {product?.category?.name || "N/A"}
+          {product?.subCategory || "N/A"}
         </p>
         <Link
           to="/products/$slug"
