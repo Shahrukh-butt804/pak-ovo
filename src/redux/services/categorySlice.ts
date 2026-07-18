@@ -49,23 +49,23 @@ export const categorySlice = createApi({
 
     addToCategory: builder.mutation({
       query: (body) => ({
-        url: "/add-product",
+        url: "/add",
         method: "POST",
         body,
       }),
     }),
 
     updateCategory: builder.mutation({
-      query: (body) => ({
-        url: "update-product",
+      query: ({id,body}) => ({
+        url: `/${id}`,
         method: "PUT",
         body,
       }),
     }),
 
-    deleteFromCategory: builder.mutation({
+    deleteCategory: builder.mutation({
       query: (id) => ({
-        url: `/update-product`,
+        url: `/${id}`,
         method: "DELETE",
       }),
     }),
@@ -79,5 +79,5 @@ export const {
   useGetCategoryBySlugQuery,
   useAddToCategoryMutation,
   useUpdateCategoryMutation,
-  useDeleteFromCategoryMutation,
+  useDeleteCategoryMutation,
 } = categorySlice;

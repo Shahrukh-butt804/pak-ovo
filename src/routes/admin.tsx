@@ -8,17 +8,16 @@ import {
   productCsvTemplate,
   useAdmin,
   validateProductRows,
-  type AdminCategory,
   type AdminOrder,
   type AdminProduct,
-  type BlogPost,
+  type BlogPost
 } from "@/lib/admin-store";
 import { formatPrice } from "@/lib/format";
 import { createFileRoute, Link, useNavigate } from "@/lib/router-compat";
 import { cn } from "@/lib/utils";
 import { logout, selectUser, setUser } from "@/redux/reducers/userSlice";
 import { useLoginMutation } from "@/redux/services/authSlice";
-import { useGetAllCategoriesWithSubCategoriesQuery } from "@/redux/services/categorySlice";
+import { useAddToCategoryMutation, useDeleteCategoryMutation, useGetAllCategoriesWithSubCategoriesQuery, useUpdateCategoryMutation } from "@/redux/services/categorySlice";
 import { useAddProductMutation, useDeleteProductMutation, useGetAllProductsQuery, useUpdateProductMutation } from "@/redux/services/productSlice";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -917,7 +916,7 @@ function CustomersView() {
       />
 
       <div className="overflow-x-auto rounded-2xl border border-border bg-card">
-        <table className="w-full min-w-[640px] text-sm">
+        <table className="w-full min-w-160 text-sm">
           <thead className="bg-surface text-left text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
               <th className="p-3">Customer</th><th className="p-3">Joined</th>
@@ -948,16 +947,297 @@ function CustomersView() {
 }
 
 /* ---------- Categories ---------- */
-function CategoriesView() {
-  const { products, categories: cats, addCategory, updateCategory, deleteCategory } = useAdmin();
-  const [editing, setEditing] = useState<AdminCategory | null>(null);
+// function CategoriesView() {
+//   const [editing, setEditing] = useState<AdminCategory | null>(null);
+//   const [creating, setCreating] = useState(false);
+//   const {data:categories , isLoading} = useGetAllCategoriesWithSubCategoriesQuery({})
+
+
+//   const [addCategory, {isLoading:isAdding}] = useAddToCategoryMutation()
+//   const [updateCategory, {isLoading:isUpdating}] = useUpdateCategoryMutation()
+//   const [deleteCategory, {isLoading:isDeleting}] = useDeleteCategoryMutation()
+
+
+  
+//   if (isLoading) {
+//       return (
+//           <div className='grid place-content-center'>
+//               <Spinner size='lg' />
+//           </div>
+//       )
+//   }
+
+//   return (
+//     <>
+//       <ToolbarCard
+//         title="Categories"
+//         count={`${categories.totalDocs} total`}
+//         actions={
+//           <Button variant="premium" size="sm" onClick={() => setCreating(true)}>
+//             <Plus className="h-4 w-4" /> New category
+//           </Button>
+//         }
+//       />
+//       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+//         {categories?.docs?.map((c:any) => {
+//           return (
+//             <div key={c.slug} className="group overflow-hidden rounded-2xl border border-border bg-card">
+//               <div className="relative h-32 w-full overflow-hidden">
+//                 <img src={UPLOADS_URL + c.image}crossOrigin="anonymous" alt={c.name} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
+//                 <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1 bg-linear-to-t from-black/70 to-transparent p-2">
+//                   <button
+//                     onClick={() => setEditing(c)}
+//                     className="rounded-md bg-background/90 p-1.5 text-foreground hover:bg-background"
+//                     aria-label="Edit"
+//                   ><Pencil className="h-4 w-4" /></button>
+//                   <button
+//                     onClick={() => {
+//                       if (confirm(`Delete category "${c.name}"? Products in this category will keep their tag.`)) {
+//                         deleteCategory(c.slug);
+//                         toast.success("Category deleted");
+//                       }
+//                     }}
+//                     className="rounded-md bg-background/90 p-1.5 text-destructive hover:bg-background"
+//                     aria-label="Delete"
+//                   ><Trash2 className="h-4 w-4" /></button>
+//                 </div>
+//               </div>
+//               <div className="p-4">
+//                 <p className="font-semibold">{c.name}</p>
+//                 <p className="mt-2 text-xs text-muted-foreground line-clamp-2">{c.description}</p>
+//                 <p className="mt-3 text-xs text-muted-foreground">
+//                   <span className="font-semibold text-foreground">{c?.subCategories?.length || 0} </span> Sub Categories {" "}
+//                 </p>
+//               </div>
+//             </div>
+//           );
+//         })}
+//       </div>
+
+//       {(creating || editing) && (
+//         <CategoryForm
+//           initial={editing}
+//           existingSlugs={categories.map((c:any) => c.slug)}
+//           onClose={() => { setCreating(false); setEditing(null); }}
+//           onSave={(data:any) => {
+//             if (editing) {
+//               updateCategory({data});
+//               toast.success("Category updated");
+//             } else {
+//               addCategory(data);
+//               toast.success("Category created");
+//             }
+//             setCreating(false); setEditing(null);
+//           }}
+//         />
+//       )}
+//     </>
+//   );
+// }
+
+// function CategoryForm({
+//   initial, existingSlugs, onClose, onSave,
+// }: {
+//   initial: AdminCategory | null;
+//   existingSlugs: string[];
+//   onClose: () => void;
+//   onSave: (data: AdminCategory) => void;
+// }) {
+//   const [form, setForm] = useState<AdminCategory>(
+//     initial ?? {
+//       slug: "", name: "", tagline: "",
+//       description: "", image: catFallback, subcategories: [],
+//       seoTitle: "", metaDescription: "",
+//     },
+//   );
+//   const [subInput, setSubInput] = useState("");
+
+//   const handleImage = (file: File | null) => {
+//     if (!file) return;
+//     const reader = new FileReader();
+//     reader.onload = () => setForm((f) => ({ ...f, image: reader.result as string }));
+//     reader.readAsDataURL(file);
+//   };
+
+//   const addSub = () => {
+//     const v = subInput.trim();
+//     if (!v) return;
+//     if (form.subcategories.includes(v)) { toast.error("Already added"); return; }
+//     setForm({ ...form, subcategories: [...form.subcategories, v] });
+//     setSubInput("");
+//   };
+
+//   return (
+//     <Modal title={initial ? "Edit category" : "New category"} onClose={onClose}>
+//       <form
+//         onSubmit={(e) => {
+//           e.preventDefault();
+//           const name = form.name.trim();
+//           if (!name) { toast.error("Name is required"); return; }
+//           const slug = (form.slug || name).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+//           if (!initial && existingSlugs.includes(slug)) { toast.error("Slug already in use"); return; }
+//           onSave({ ...form, name, slug });
+//         }}
+//         className="space-y-4"
+//       >
+//         <div className="grid gap-4 sm:grid-cols-[140px_1fr]">
+//           <div>
+//             <label className="block text-xs font-medium text-muted-foreground">Image</label>
+//             <div className="mt-1 aspect-square overflow-hidden rounded-lg border border-border bg-surface">
+//               <img src={form.image} alt="" className="h-full w-full object-cover" />
+//             </div>
+//             <label className="mt-2 flex cursor-pointer items-center justify-center gap-1 rounded-md border border-dashed border-border py-2 text-xs hover:bg-secondary">
+//               <Upload className="h-3 w-3" /> Upload
+//               <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImage(e.target.files?.[0] ?? null)} />
+//             </label>
+//           </div>
+//           <div className="space-y-3">
+//             <Field label="Name" required value={form.name} onChange={(v) => setForm({ ...form, name: v })} />
+//             <Field
+//               label={initial ? "Slug (read-only)" : "Slug (auto from name if blank)"}
+//               value={form.slug}
+//               onChange={(v) => setForm({ ...form, slug: v })}
+//             />
+//             <Field label="Tagline" value={form.tagline} onChange={(v) => setForm({ ...form, tagline: v })} />
+//             <label className="block">
+//               <span className="mb-1 block text-xs font-medium text-muted-foreground">Description</span>
+//               <textarea
+//                 value={form.description}
+//                 onChange={(e) => setForm({ ...form, description: e.target.value })}
+//                 rows={3}
+//                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
+//               />
+//             </label>
+//           </div>
+//         </div>
+
+//         <div>
+//           <label className="block text-xs font-medium text-muted-foreground">Subcategories</label>
+//           <div className="mt-2 flex flex-wrap gap-2">
+//             {form.subcategories.map((s) => (
+//               <span key={s} className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-xs">
+//                 {s}
+//                 <button
+//                   type="button"
+//                   onClick={() => setForm({ ...form, subcategories: form.subcategories.filter((x) => x !== s) })}
+//                   className="text-muted-foreground hover:text-destructive"
+//                   aria-label={`Remove ${s}`}
+//                 ><X className="h-3 w-3" /></button>
+//               </span>
+//             ))}
+//             {form.subcategories.length === 0 && (
+//               <span className="text-xs text-muted-foreground">No subcategories yet.</span>
+//             )}
+//           </div>
+//           <div className="mt-2 flex gap-2">
+//             <input
+//               value={subInput}
+//               onChange={(e) => setSubInput(e.target.value)}
+//               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addSub(); } }}
+//               placeholder="Add subcategory and press Enter"
+//               className="h-9 flex-1 rounded-md border border-input bg-background px-3 text-sm outline-none focus:border-brand"
+//             />
+//             <Button type="button" variant="outline" size="sm" onClick={addSub}>Add</Button>
+//           </div>
+//         </div>
+
+//         <div className="space-y-3 rounded-lg border border-border bg-surface p-4">
+//           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">SEO</p>
+//           <Field label="SEO title" value={form.seoTitle ?? ""} onChange={(v) => setForm({ ...form, seoTitle: v })} />
+//           <label className="block">
+//             <span className="mb-1 block text-xs font-medium text-muted-foreground">Meta description</span>
+//             <textarea
+//               value={form.metaDescription ?? ""}
+//               onChange={(e) => setForm({ ...form, metaDescription: e.target.value })}
+//               rows={2}
+//               maxLength={160}
+//               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
+//             />
+//             <span className="mt-1 block text-[10px] text-muted-foreground">{(form.metaDescription ?? "").length}/160</span>
+//           </label>
+//         </div>
+
+//         <div className="flex justify-end gap-2 border-t border-border pt-4">
+//           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+//           <Button type="submit" variant="premium">{initial ? "Save changes" : "Create category"}</Button>
+//         </div>
+//       </form>
+//     </Modal>
+//   );
+// }
+
+
+
+interface SubCategory {
+  _id?: string;
+  name: string;
+  slug?: string;
+}
+
+interface ServerCategory {
+  _id: string;
+  name: string;
+  slug: string;
+  image: string;
+  subCategories: SubCategory[];
+  tagline?: string;
+  description?: string;
+  seoTitle?: string;
+  metaDescription?: string;
+}
+
+export function CategoriesView() {
+  const [editing, setEditing] = useState<ServerCategory | null>(null);
   const [creating, setCreating] = useState(false);
+  const { data: categories, isLoading, refetch } = useGetAllCategoriesWithSubCategoriesQuery({});
+
+  const [addCategory] = useAddToCategoryMutation();
+  const [updateCategory] = useUpdateCategoryMutation();
+  const [deleteCategory, { isLoading: isDeleting }] = useDeleteCategoryMutation();
+
+  if (isLoading) {
+    return (
+      <div className="grid place-content-center">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  const docs: ServerCategory[] = categories?.docs ?? [];
+
+  const handleDelete = async (c: ServerCategory) => {
+    if (!confirm(`Delete category "${c.name}"? Products in this category will keep their tag.`)) return;
+    try {
+      await deleteCategory(c._id).unwrap();
+      toast.success("Category deleted");
+      refetch();
+    } catch (err: any) {
+      toast.error(err?.data?.message ?? "Failed to delete category");
+    }
+  };
+
+  const handleSave = async (formData: FormData) => {
+    try {
+      if (editing) {
+        await updateCategory({ id: editing._id, body: formData }).unwrap();
+        toast.success("Category updated");
+      } else {
+        await addCategory(formData).unwrap();
+        toast.success("Category created");
+      }
+      setCreating(false);
+      setEditing(null);
+      refetch();
+    } catch (err: any) {
+      toast.error(err?.data?.message ?? "Failed to save category");
+    }
+  };
 
   return (
     <>
       <ToolbarCard
         title="Categories"
-        count={`${cats.length} total`}
+        count={`${categories?.totalDocs ?? 0} total`}
         actions={
           <Button variant="premium" size="sm" onClick={() => setCreating(true)}>
             <Plus className="h-4 w-4" /> New category
@@ -965,59 +1245,58 @@ function CategoriesView() {
         }
       />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {cats.map((c) => {
-          const count = products.filter((p) => p.category === c.slug).length;
-          return (
-            <div key={c.slug} className="group overflow-hidden rounded-2xl border border-border bg-card">
-              <div className="relative h-32 w-full overflow-hidden">
-                <img src={c.image} alt={c.name} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
-                <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1 bg-gradient-to-t from-black/70 to-transparent p-2">
-                  <button
-                    onClick={() => setEditing(c)}
-                    className="rounded-md bg-background/90 p-1.5 text-foreground hover:bg-background"
-                    aria-label="Edit"
-                  ><Pencil className="h-4 w-4" /></button>
-                  <button
-                    onClick={() => {
-                      if (confirm(`Delete category "${c.name}"? Products in this category will keep their tag.`)) {
-                        deleteCategory(c.slug);
-                        toast.success("Category deleted");
-                      }
-                    }}
-                    className="rounded-md bg-background/90 p-1.5 text-destructive hover:bg-background"
-                    aria-label="Delete"
-                  ><Trash2 className="h-4 w-4" /></button>
-                </div>
-              </div>
-              <div className="p-4">
-                <p className="font-semibold">{c.name}</p>
-                <p className="mt-0.5 text-xs uppercase tracking-wider text-brand">{c.tagline}</p>
-                <p className="mt-2 text-xs text-muted-foreground line-clamp-2">{c.description}</p>
-                <p className="mt-3 text-xs text-muted-foreground">
-                  <span className="font-semibold text-foreground">{c.subcategories.length}</span> subcategories ·{" "}
-                  <span className="font-semibold text-foreground">{count}</span> products
-                </p>
+        {docs.map((c) => (
+          <div key={c._id} className="group overflow-hidden rounded-2xl border border-border bg-card">
+            <div className="relative h-32 w-full overflow-hidden">
+              <img
+                src={UPLOADS_URL + c.image}
+                crossOrigin="anonymous"
+                alt={c.name}
+                className="h-full w-full object-cover transition-transform group-hover:scale-105"
+              />
+              <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1 bg-linear-to-t from-black/70 to-transparent p-2">
+                <button
+                  onClick={() => setEditing(c)}
+                  className="rounded-md bg-background/90 p-1.5 text-foreground hover:bg-background"
+                  aria-label="Edit"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => handleDelete(c)}
+                  disabled={isDeleting}
+                  className="rounded-md bg-background/90 p-1.5 text-destructive hover:bg-background disabled:opacity-50"
+                  aria-label="Delete"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
               </div>
             </div>
-          );
-        })}
+            <div className="p-4">
+              <p className="font-semibold">{c.name}</p>
+              {c.description && (
+                <p className="mt-2 text-xs text-muted-foreground line-clamp-2">{c.description}</p>
+              )}
+              <p className="mt-3 text-xs text-muted-foreground">
+                <span className="font-semibold text-foreground">{c.subCategories?.length || 0} </span>
+                Sub Categories
+              </p>
+            </div>
+          </div>
+        ))}
+        {docs.length === 0 && (
+          <p className="col-span-full py-8 text-center text-sm text-muted-foreground">No categories yet.</p>
+        )}
       </div>
 
       {(creating || editing) && (
         <CategoryForm
           initial={editing}
-          existingSlugs={cats.map((c) => c.slug)}
-          onClose={() => { setCreating(false); setEditing(null); }}
-          onSave={(data) => {
-            if (editing) {
-              updateCategory(editing.slug, data);
-              toast.success("Category updated");
-            } else {
-              addCategory(data);
-              toast.success("Category created");
-            }
-            setCreating(false); setEditing(null);
+          onClose={() => {
+            setCreating(false);
+            setEditing(null);
           }}
+          onSave={handleSave}
         />
       )}
     </>
@@ -1025,69 +1304,93 @@ function CategoriesView() {
 }
 
 function CategoryForm({
-  initial, existingSlugs, onClose, onSave,
+  initial,
+  onClose,
+  onSave,
 }: {
-  initial: AdminCategory | null;
-  existingSlugs: string[];
+  initial: ServerCategory | null;
   onClose: () => void;
-  onSave: (data: AdminCategory) => void;
+  onSave: (formData: FormData) => Promise<void>;
 }) {
-  const [form, setForm] = useState<AdminCategory>(
-    initial ?? {
-      slug: "", name: "", tagline: "",
-      description: "", image: catFallback, subcategories: [],
-      seoTitle: "", metaDescription: "",
-    },
-  );
+  const [form, setForm] = useState({
+    name: initial?.name ?? "",
+    description: initial?.description ?? "",
+  });
+  const [subcategories, setSubcategories] = useState<SubCategory[]>(initial?.subCategories ?? []);
   const [subInput, setSubInput] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imgPreview, setImgPreview] = useState<string>(
+    initial ? UPLOADS_URL + initial.image : catFallback,
+  );
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleImage = (file: File | null) => {
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setForm((f) => ({ ...f, image: reader.result as string }));
-    reader.readAsDataURL(file);
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+    setImageFile(file);
+    setImgPreview(URL.createObjectURL(file));
   };
 
   const addSub = () => {
     const v = subInput.trim();
     if (!v) return;
-    if (form.subcategories.includes(v)) { toast.error("Already added"); return; }
-    setForm({ ...form, subcategories: [...form.subcategories, v] });
+    if (subcategories.some((s) => s.name.toLowerCase() === v.toLowerCase())) {
+      toast.error("Already added");
+      return;
+    }
+    setSubcategories([...subcategories, { name: v }]);
     setSubInput("");
+  };
+
+  const removeSub = (name: string) => {
+    setSubcategories(subcategories.filter((s) => s.name !== name));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = form.name.trim();
+    if (!name) return toast.error("Name is required");
+
+    if (!initial && !imageFile) return toast.error("Please upload an image");
+
+    const fd = new FormData();
+    fd.append("name", name);
+    if (form.description) fd.append("description", form.description);
+    fd.append("subCategories", JSON.stringify(subcategories.map((s) => s.name)));
+    if (imageFile) fd.append("image", imageFile);
+
+    setIsSubmitting(true);
+    try {
+      await onSave(fd);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <Modal title={initial ? "Edit category" : "New category"} onClose={onClose}>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          const name = form.name.trim();
-          if (!name) { toast.error("Name is required"); return; }
-          const slug = (form.slug || name).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-          if (!initial && existingSlugs.includes(slug)) { toast.error("Slug already in use"); return; }
-          onSave({ ...form, name, slug });
-        }}
-        className="space-y-4"
-      >
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-[140px_1fr]">
           <div>
             <label className="block text-xs font-medium text-muted-foreground">Image</label>
             <div className="mt-1 aspect-square overflow-hidden rounded-lg border border-border bg-surface">
-              <img src={form.image} alt="" className="h-full w-full object-cover" />
+              <img src={imgPreview} crossOrigin="anonymous" alt="image" className="h-full w-full object-cover" />
             </div>
             <label className="mt-2 flex cursor-pointer items-center justify-center gap-1 rounded-md border border-dashed border-border py-2 text-xs hover:bg-secondary">
               <Upload className="h-3 w-3" /> Upload
-              <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImage(e.target.files?.[0] ?? null)} />
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => handleImage(e.target.files?.[0] ?? null)}
+              />
             </label>
           </div>
           <div className="space-y-3">
             <Field label="Name" required value={form.name} onChange={(v) => setForm({ ...form, name: v })} />
-            <Field
-              label={initial ? "Slug (read-only)" : "Slug (auto from name if blank)"}
-              value={form.slug}
-              onChange={(v) => setForm({ ...form, slug: v })}
-            />
-            <Field label="Tagline" value={form.tagline} onChange={(v) => setForm({ ...form, tagline: v })} />
             <label className="block">
               <span className="mb-1 block text-xs font-medium text-muted-foreground">Description</span>
               <textarea
@@ -1103,18 +1406,20 @@ function CategoryForm({
         <div>
           <label className="block text-xs font-medium text-muted-foreground">Subcategories</label>
           <div className="mt-2 flex flex-wrap gap-2">
-            {form.subcategories.map((s) => (
-              <span key={s} className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-xs">
-                {s}
+            {subcategories.map((s) => (
+              <span key={s.name} className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-xs">
+                {s.name}
                 <button
                   type="button"
-                  onClick={() => setForm({ ...form, subcategories: form.subcategories.filter((x) => x !== s) })}
+                  onClick={() => removeSub(s.name)}
                   className="text-muted-foreground hover:text-destructive"
-                  aria-label={`Remove ${s}`}
-                ><X className="h-3 w-3" /></button>
+                  aria-label={`Remove ${s.name}`}
+                >
+                  <X className="h-3 w-3" />
+                </button>
               </span>
             ))}
-            {form.subcategories.length === 0 && (
+            {subcategories.length === 0 && (
               <span className="text-xs text-muted-foreground">No subcategories yet.</span>
             )}
           </div>
@@ -1122,7 +1427,12 @@ function CategoryForm({
             <input
               value={subInput}
               onChange={(e) => setSubInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addSub(); } }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addSub();
+                }
+              }}
               placeholder="Add subcategory and press Enter"
               className="h-9 flex-1 rounded-md border border-input bg-background px-3 text-sm outline-none focus:border-brand"
             />
@@ -1130,25 +1440,11 @@ function CategoryForm({
           </div>
         </div>
 
-        <div className="space-y-3 rounded-lg border border-border bg-surface p-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">SEO</p>
-          <Field label="SEO title" value={form.seoTitle ?? ""} onChange={(v) => setForm({ ...form, seoTitle: v })} />
-          <label className="block">
-            <span className="mb-1 block text-xs font-medium text-muted-foreground">Meta description</span>
-            <textarea
-              value={form.metaDescription ?? ""}
-              onChange={(e) => setForm({ ...form, metaDescription: e.target.value })}
-              rows={2}
-              maxLength={160}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
-            />
-            <span className="mt-1 block text-[10px] text-muted-foreground">{(form.metaDescription ?? "").length}/160</span>
-          </label>
-        </div>
-
         <div className="flex justify-end gap-2 border-t border-border pt-4">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="premium">{initial ? "Save changes" : "Create category"}</Button>
+          <Button type="submit" variant="premium" disabled={isSubmitting}>
+            {isSubmitting ? "Saving..." : initial ? "Save changes" : "Create category"}
+          </Button>
         </div>
       </form>
     </Modal>
@@ -1175,7 +1471,7 @@ function DiscountsView() {
         }
       />
       <div className="overflow-x-auto rounded-2xl border border-border bg-card">
-        <table className="w-full min-w-[480px] text-sm">
+        <table className="w-full min-w-120 text-sm">
           <thead className="bg-surface text-left text-xs uppercase tracking-wider text-muted-foreground">
             <tr><th className="p-3">Code</th><th className="p-3">Discount</th><th className="p-3">Uses</th><th className="p-3">Status</th><th className="p-3 text-right">Actions</th></tr>
           </thead>
