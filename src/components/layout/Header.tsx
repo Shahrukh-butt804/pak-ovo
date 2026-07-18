@@ -7,11 +7,13 @@ import { useLogoutMutation } from "@/redux/services/authSlice";
 import { useGetMyCartQuery } from "@/redux/services/cartSlice";
 import { useGetMyWishlistQuery } from "@/redux/services/wishlistSlice";
 import { Heart, Menu, Search, ShoppingBag, User, X } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
 import { MegaMenu } from "./MegaMenu";
+import { useGetAllCategoriesQuery } from "@/redux/services/categorySlice";
+import { CategoryApiItem } from "@/routes/shop";
 
 export function Header() {
   const dispatch = useDispatch();
@@ -24,6 +26,13 @@ export function Header() {
   const { data: wishlist } = useGetMyWishlistQuery({});
 
   const [logoutuser, { isLoading }] = useLogoutMutation();
+
+    const { data: categoriesResponse } = useGetAllCategoriesQuery({});
+    
+    const categories = useMemo(
+      () => (categoriesResponse?.docs ?? categoriesResponse ?? []) as CategoryApiItem[],
+      [categoriesResponse],
+    );
 
   const username = useSelector(selectUser)?.fullName;
 
@@ -173,9 +182,9 @@ export function Header() {
               {c.name}
             </Link>
           ))}
-          <Link to="/blog" className="hover:text-brand transition-colors">
+          {/* <Link to="/blog" className="hover:text-brand transition-colors">
             Journal
-          </Link>
+          </Link> */}
           <Link
             to="/shop"
             search={{ filter: "sale" }}

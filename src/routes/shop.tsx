@@ -271,11 +271,12 @@ function Shop() {
   );
 }
 
-type CategoryApiItem = {
+export type CategoryApiItem = {
   _id?: string;
   id?: string;
   name?: string;
   slug?: string;
+  image? : string
 };
 
 type ProductApiItem = {
