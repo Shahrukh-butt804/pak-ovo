@@ -4,6 +4,7 @@ import { findCategory } from "@/data/categories";
 import { productsByCategory } from "@/data/products";
 import { ProductGrid } from "@/components/product/ProductCard";
 import { ChevronDown } from "lucide-react";
+import { useGetAllSubCategoriesQuery } from "@/redux/services/subCategorySlice";
 
 export const Route = createFileRoute("/collections/$slug")({
   loader: ({ params }: any) => {
@@ -44,13 +45,16 @@ function Collection() {
   const all = productsByCategory(cat.slug);
   const [sort, setSort] = useState("popular");
 
+  // const {data : subCategories} = useGetAllSubCategoriesQuery({slug})
+  // console.log("🚀 ~ Collection ~ subCategories:", subCategories)
+
   const items = useMemo(() => {
     let list = all.slice();
     if (sort === "price-asc") list.sort((a,b) => a.price - b.price);
     if (sort === "price-desc") list.sort((a,b) => b.price - a.price);
     if (sort === "rating") list.sort((a,b) => b.rating - a.rating);
     return list;
-  }, [all, sub, sort]);
+  }, [all, sort]);
 
   return (
     <>

@@ -11,6 +11,7 @@ import { resourceSlice } from "./services/resourceSlice";
 import { cartSlice } from "./services/cartSlice";
 import { wishlistSlice } from "./services/wishlistSlice";
 import { categorySlice } from "./services/categorySlice";
+import { subCategorySlice } from "./services/subCategorySlice";
 
 export const store = configureStore({
   reducer: {
@@ -24,6 +25,7 @@ export const store = configureStore({
     [resourceSlice.reducerPath]: resourceSlice.reducer,
     [cartSlice.reducerPath]: cartSlice.reducer,
     [categorySlice.reducerPath]: categorySlice.reducer,
+    [subCategorySlice.reducerPath]: subCategorySlice.reducer,
     user: userReducer,
   },
   middleware: (getDefaultMiddleware) =>
@@ -37,7 +39,8 @@ export const store = configureStore({
       .concat(wishlistSlice.middleware)
       .concat(resourceSlice.middleware)
       .concat(cartSlice.middleware)
-      .concat(categorySlice.middleware), // Add RTK Query middleware
+      .concat(categorySlice.middleware) // Add RTK Query middleware
+      .concat(subCategorySlice.middleware),
 });
 
 setupListeners(store.dispatch);

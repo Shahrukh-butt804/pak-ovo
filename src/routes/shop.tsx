@@ -40,26 +40,28 @@ function Shop() {
   const [searchInput, setSearchInput] = useState(sp.q ?? "");
   const currentPage = sp.page ?? 1;
   const keyword = (sp.q ?? "").trim();
-  const categoryId = sp.category ?? sp.cat ?? "";
+  const categorySlug = sp.category ?? sp.cat ?? "";
   const { data: categoriesResponse } = useGetAllCategoriesQuery({});
   const categories = useMemo(
     () => (categoriesResponse?.docs ?? categoriesResponse ?? []) as CategoryApiItem[],
     [categoriesResponse],
   );
 
-  const { data, isLoading , refetch } = useGetAllProductsQuery({
-    page: currentPage,
-    limit: 8,
-    keyword: keyword || undefined,
-    category: categoryId || undefined,
-    sortBy: mapSortToBackend(sort),
-  },{refetchOnMountOrArgChange : true});
+  const { data, isLoading, refetch } = useGetAllProductsQuery(
+    {
+      page: currentPage,
+      limit: 8,
+      keyword: keyword || undefined,
+      category: categorySlug || undefined,
+      sortBy: mapSortToBackend(sort),
+    },
+    { refetchOnMountOrArgChange: true },
+  );
 
   const selectedCategory = useMemo(() => {
-    if (!categoryId) return undefined;
-    return categories.find((c: CategoryApiItem) => c._id === categoryId || c.id === categoryId);
-  }, [categories, categoryId]);
-
+    if (!categorySlug) return undefined;
+    return categories.find((c: CategoryApiItem) => c.slug === categorySlug);
+  }, [categories, categorySlug]);
 
   const items = useMemo(() => {
     const docs: Product[] = (data?.docs ?? []).map((item: ProductApiItem, index: number) =>
@@ -85,11 +87,7 @@ function Shop() {
       const selectedCategorySlug = selectedCategory.slug?.toLowerCase();
       list = list.filter((product: Product) => {
         const categoryValue = product.category.toLowerCase();
-        return (
-          categoryValue === selectedCategoryName ||
-          categoryValue === selectedCategorySlug ||
-          categoryValue === categoryId
-        );
+        return categoryValue === selectedCategoryName || categoryValue === selectedCategorySlug;
       });
     }
     if (sort === "price-asc") list.sort((a: Product, b: Product) => a.price - b.price);
@@ -98,7 +96,7 @@ function Shop() {
     if (sort === "newest")
       list.sort((a: Product, b: Product) => Number(b.badge === "new") - Number(a.badge === "new"));
     return list;
-  }, [categoryId, data?.docs, keyword, sp.filter, sort]);
+  }, [categorySlug, data?.docs, keyword, sp.filter, sort]);
 
   const totalPages = Math.max(data?.totalPages ?? 1, 1);
   const totalItems = data?.totalDocs ?? items.length;
@@ -110,7 +108,7 @@ function Shop() {
         q: keyword || undefined,
         filter: sp.filter || undefined,
         cat: sp.cat || undefined,
-        category: categoryId || undefined,
+        category: categorySlug || undefined,
         sort: sort || undefined,
         page: currentPage,
         ...updates,
@@ -138,8 +136,8 @@ function Shop() {
         / Shop
       </nav>
       <h1 className="font-display text-3xl font-bold md:text-4xl">
-        {categoryId
-          ? (categories.find((c: CategoryApiItem) => c._id === categoryId)?.name ?? "Category")
+        {categorySlug
+          ? (categories.find((c: CategoryApiItem) => c.slug === categorySlug)?.name ?? "Category")
           : "All products"}
       </h1>
       <p className="mt-2 text-muted-foreground">{totalItems} items</p>
@@ -190,8 +188,8 @@ function Shop() {
               q: keyword || undefined,
               sort,
               filter: sp.filter || undefined,
-              cat: category._id,
-              category: category._id,
+              cat: category.slug,
+              category: category.slug,
               page: 1,
             }}
             className="rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:border-brand hover:text-brand"
@@ -276,7 +274,7 @@ export type CategoryApiItem = {
   id?: string;
   name?: string;
   slug?: string;
-  image? : string
+  image?: string;
 };
 
 type ProductApiItem = {
