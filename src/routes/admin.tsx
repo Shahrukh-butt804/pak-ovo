@@ -2,6 +2,7 @@ import catFallback from "@/assets/cat-cosmetics.jpg";
 import Spinner from "@/components/spinner";
 import Table from "@/components/table";
 import { Button } from "@/components/ui/button";
+import { UPLOADS_URL } from "@/constants/api";
 import {
   parseCsv,
   productCsvTemplate,
@@ -23,6 +24,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import {
   BarChart3,
+  Check, ChevronLeft, ChevronRight,
   Download,
   FileDown,
   FileText, Image as ImageIcon,
@@ -42,12 +44,9 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
-import { Check, ChevronLeft, ChevronRight } from "lucide-react";
-import { useEffect } from "react";
-import { UPLOADS_URL } from "@/constants/api";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — PakOvo" }, { name: "robots", content: "noindex" }] }),
@@ -387,9 +386,6 @@ function ProductsView() {
     </>
   );
 }
-
-
-
 
 function getImageUrl(path?: string) {
   if (!path) return "";
