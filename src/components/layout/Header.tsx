@@ -1,5 +1,4 @@
 import logo from "@/assets/logo.png";
-import { categories } from "@/data/categories";
 import { useCart } from "@/lib/cart-store";
 import { Link, useNavigate } from "@/lib/router-compat";
 import { logout, selectUser } from "@/redux/reducers/userSlice";
@@ -27,12 +26,12 @@ export function Header() {
 
   const [logoutuser, { isLoading }] = useLogoutMutation();
 
-    const { data: categoriesResponse } = useGetAllCategoriesQuery({});
-    
-    const categories = useMemo(
-      () => (categoriesResponse?.docs ?? categoriesResponse ?? []) as CategoryApiItem[],
-      [categoriesResponse],
-    );
+  const { data: categoriesResponse } = useGetAllCategoriesQuery({});
+
+  const categories = useMemo(
+    () => (categoriesResponse?.docs ?? categoriesResponse ?? []) as CategoryApiItem[],
+    [categoriesResponse],
+  );
 
   const username = useSelector(selectUser)?.fullName;
 

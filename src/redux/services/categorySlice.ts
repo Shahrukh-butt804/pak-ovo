@@ -10,9 +10,23 @@ export const categorySlice = createApi({
     prepareHeaders,
   }),
   endpoints: (builder) => ({
+
     getAllCategories: builder.query({
       query: ({ page, limit, keyword }) => ({
         url: "/",
+        method: "GET",
+        params: {
+          page,
+          limit,
+          keyword,
+        },
+      }),
+      transformResponse: (response: any) => response?.data,
+    }),
+
+    getAllCategoriesWithSubCategories: builder.query({
+      query: ({ page, limit, keyword }) => ({
+        url: "/with-subcategories",
         method: "GET",
         params: {
           page,
@@ -55,6 +69,7 @@ export const categorySlice = createApi({
 
 export const {
   useGetAllCategoriesQuery,
+  useGetAllCategoriesWithSubCategoriesQuery,
   useGetCategoryByIdQuery,
   useAddToCategoryMutation,
   useUpdateCategoryMutation,
