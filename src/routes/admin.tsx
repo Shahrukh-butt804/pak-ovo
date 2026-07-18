@@ -297,7 +297,7 @@ function ProductsView() {
         limit: 10,
         keyword: ""
     })
-    const { data, isLoading,isFetching, refetch } = useGetAllProductsQuery({ ...pagination }, { refetchOnMountOrArgChange: true})
+    const { data, isLoading, refetch } = useGetAllProductsQuery({ ...pagination }, { refetchOnMountOrArgChange: true})
 
     const [deleteProduct ,{ isLoading : isDeleting}] = useDeleteProductMutation()
 
