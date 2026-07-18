@@ -43,7 +43,7 @@ function Shop() {
   const categorySlug = sp.category ?? sp.cat ?? "";
   const { data: categoriesResponse } = useGetAllCategoriesQuery({});
   const categories = useMemo(
-    () => (categoriesResponse?.docs ?? categoriesResponse ?? []) as CategoryApiItem[],
+    () => (categoriesResponse?.docs ?? categoriesResponse ?? []) as any[],
     [categoriesResponse],
   );
 
@@ -60,11 +60,11 @@ function Shop() {
 
   const selectedCategory = useMemo(() => {
     if (!categorySlug) return undefined;
-    return categories.find((c: CategoryApiItem) => c.slug === categorySlug);
+    return categories.find((c: any) => c.slug === categorySlug);
   }, [categories, categorySlug]);
 
   const items = useMemo(() => {
-    const docs: Product[] = (data?.docs ?? []).map((item: ProductApiItem, index: number) =>
+    const docs: Product[] = (data?.docs ?? []).map((item: any, index: number) =>
       normalizeProduct(item, index, sp.cat ?? "cosmetics"),
     );
 
@@ -137,7 +137,7 @@ function Shop() {
       </nav>
       <h1 className="font-display text-3xl font-bold md:text-4xl">
         {categorySlug
-          ? (categories.find((c: CategoryApiItem) => c.slug === categorySlug)?.name ?? "Category")
+          ? (categories.find((c: any) => c.slug === categorySlug)?.name ?? "Category")
           : "All products"}
       </h1>
       <p className="mt-2 text-muted-foreground">{totalItems} items</p>
@@ -180,7 +180,7 @@ function Shop() {
         >
           All
         </Link>
-        {categories.map((category: CategoryApiItem) => (
+        {categories.map((category: any) => (
           <Link
             key={category._id}
             to="/shop"
@@ -269,41 +269,7 @@ function Shop() {
   );
 }
 
-export type CategoryApiItem = {
-  _id?: string;
-  id?: string;
-  name?: string;
-  slug?: string;
-  image?: string;
-};
-
-type ProductApiItem = {
-  _id?: string | number;
-  id?: string | number;
-  name?: string;
-  title?: string;
-  slug?: string;
-  description?: string;
-  shortDescription?: string;
-  price?: number;
-  discountedPrice?: number;
-  salePrice?: number;
-  originalPrice?: number;
-  compareAt?: number;
-  rating?: number;
-  reviews?: number;
-  badge?: Product["badge"];
-  image?: string;
-  thumbnail?: string;
-  productImage?: string;
-  images?: string[];
-  tags?: string[];
-  subcategory?: string;
-  category?: string | { slug?: string; name?: string };
-  wished?: boolean;
-};
-
-function normalizeProduct(item: ProductApiItem, index: number, fallbackCategory: string): Product {
+function normalizeProduct(item: any, index: number, fallbackCategory: string): any {
   const name = String(item.name ?? item.title ?? "Untitled product");
   const categoryName =
     typeof item.category === "string"
