@@ -11,7 +11,15 @@ import {
 import { Heart, ShoppingBag, Star } from "lucide-react";
 import { toast } from "sonner";
 
-export function ProductCard({ product, refetch }: { product: any; refetch?: any }) {
+export function ProductCard({
+  product,
+  refetch,
+  isFromDB = true,
+}: {
+  product: any;
+  refetch?: any;
+  isFromDB?: any;
+}) {
   const [addToWishlist, { isLoading: isAddingToWishlist }] = useAddProductToWishlistMutation();
   const [deleteToWishlist, { isLoading: isdeleteingToWishlist }] = useDeleteFromWishlistMutation();
   const wished = product.wished ?? false;
@@ -33,7 +41,7 @@ export function ProductCard({ product, refetch }: { product: any; refetch?: any 
     e.stopPropagation();
     const res: any = wished ? await deleteToWishlist(product.id) : await addToWishlist(product.id);
     if (res?.data?.success) {
-      refetch()
+      refetch();
       toast.success(res.data.message || "Operation successful");
     } else {
       toast.error(res.error.data.message || "something went wrong");
@@ -55,7 +63,7 @@ export function ProductCard({ product, refetch }: { product: any; refetch?: any 
         className="relative aspect-4/5 overflow-hidden rounded-xl bg-surface"
       >
         <img
-          src={UPLOADS_URL + product.image}
+          src={isFromDB ? UPLOADS_URL + product.image : product.image}
           alt={product.name}
           crossOrigin="anonymous"
           loading="lazy"
@@ -131,12 +139,12 @@ export function ProductGrid({ products, refetch }: { products: Product[]; refetc
   );
 }
 
-export function ProductRow({ products }: { products: Product[] }) {
+export function ProductRow({ products, isFromDB = true }: { products: Product[]; isFromDB?: any }) {
   return (
     <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scroll-px-4 lg:grid lg:grid-cols-4 lg:gap-6 lg:overflow-visible">
       {products.map((p) => (
         <div key={p.id} className="w-[70%] shrink-0 snap-start sm:w-[45%] md:w-[35%] lg:w-auto">
-          <ProductCard product={p} />
+          <ProductCard product={p} isFromDB={isFromDB} />
         </div>
       ))}
     </div>
