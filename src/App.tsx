@@ -22,6 +22,7 @@ import { Route as BlogSlugRoute } from "@/routes/blog.$slug";
 import { Route as LoginRoute } from "@/routes/auth.login";
 import { Route as RegisterRoute } from "@/routes/auth.register";
 import { Route as CollectionsSlugRoute } from "@/routes/collections.$slug";
+import { Route as CollectionsSlugSubCategoryRoute } from "@/routes/collections.$slug.$subCategory";
 import { Route as ProductSlugRoute } from "@/routes/products.$slug";
 import { Route as ForgetPasswordRoute } from "@/routes/auth.forgetPassword";
 import { Route as VerifyOtpRoute } from "@/routes/auth.verifyotp";
@@ -138,6 +139,7 @@ export function App() {
           <Route path="/auth/reset-password" element={renderRoute(ResetPasswordRoute)} />
           <Route path="/auth/register" element={renderRoute(RegisterRoute)} />
           <Route path="/collections/:slug" element={renderRoute(CollectionsSlugRoute)} />
+          <Route path="/collections/:slug/:subCategory" element={renderRoute(CollectionsSlugSubCategoryRoute)} />
           <Route path="/products/:slug" element={renderRoute(ProductSlugRoute)} />
           <Route path="*" element={<NotFound />} />
         </Routes>

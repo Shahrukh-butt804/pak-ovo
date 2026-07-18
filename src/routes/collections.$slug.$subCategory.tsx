@@ -9,7 +9,7 @@ import { ChevronDown } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
-export const Route = createFileRoute("/collections/$slug")({
+export const Route = createFileRoute("/collections/$slug/$subCategory")({
   loader: ({ params }: any) => {
     const cat = findCategory(params.slug);
     if (!cat) throw notFound();

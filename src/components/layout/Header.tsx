@@ -12,7 +12,6 @@ import { toast } from "sonner";
 import { Button } from "../ui/button";
 import { MegaMenu } from "./MegaMenu";
 import { useGetAllCategoriesQuery } from "@/redux/services/categorySlice";
-import { CategoryApiItem } from "@/routes/shop";
 
 export function Header() {
   const dispatch = useDispatch();
@@ -29,7 +28,7 @@ export function Header() {
   const { data: categoriesResponse } = useGetAllCategoriesQuery({});
 
   const categories = useMemo(
-    () => (categoriesResponse?.docs ?? categoriesResponse ?? []) as CategoryApiItem[],
+    () => (categoriesResponse?.docs ?? categoriesResponse ?? []) as any[],
     [categoriesResponse],
   );
 

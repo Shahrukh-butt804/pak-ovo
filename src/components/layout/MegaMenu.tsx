@@ -74,7 +74,10 @@ export function MegaMenu({ onNavigate }: MegaMenuProps) {
         ) : (
           <div className="mt-6 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {categories.map((cat) => (
-              <div key={cat._id ?? cat.slug} className="rounded-xl border border-border/60 bg-background/70 p-4">
+              <div
+                key={cat._id ?? cat.slug}
+                className="rounded-xl border border-border/60 bg-background/70 p-4"
+              >
                 <Link
                   to="/collections/$slug"
                   params={{ slug: cat.slug ?? cat._id ?? "" }}
@@ -91,7 +94,11 @@ export function MegaMenu({ onNavigate }: MegaMenuProps) {
                   </div>
                   <div>
                     <div className="font-display text-sm font-semibold">{cat.name}</div>
-                    <div className="text-xs text-muted-foreground">{cat.subCategories?.length ? `${cat.subCategories.length} subcategories` : "Explore collection"}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {cat.subCategories?.length
+                        ? `${cat.subCategories.length} subcategories`
+                        : "Explore collection"}
+                    </div>
                   </div>
                 </Link>
                 <ul className="space-y-1.5 border-t border-border pt-3">
@@ -99,8 +106,8 @@ export function MegaMenu({ onNavigate }: MegaMenuProps) {
                     cat.subCategories!.map((sub) => (
                       <li key={sub._id ?? sub.slug}>
                         <Link
-                          to="/shop"
-                          search={{ category: cat._id ?? cat.slug, cat: cat._id ?? cat.slug, page: 1 }}
+                          to="/collections/$slug/$subCategory"
+                          params={{ slug: cat.slug, subCategory: sub.slug }}
                           onClick={onNavigate}
                           className="block text-sm text-muted-foreground transition-colors hover:text-brand"
                         >
