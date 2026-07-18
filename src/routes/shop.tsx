@@ -53,6 +53,7 @@ function Shop() {
       keyword: keyword || undefined,
       category: categorySlug || undefined,
       sortBy: mapSortToBackend(sort),
+      filter : sp.filter || undefined
     },
     { refetchOnMountOrArgChange: true },
   );
