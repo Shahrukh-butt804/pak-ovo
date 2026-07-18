@@ -12,7 +12,7 @@ export const orderSlice = createApi({
   endpoints: (builder) => ({
     getAllOrders: builder.query({
       query: ({ page, limit, keyword }) => ({
-        url: "/get-all-orders",
+        url: "/",
         method: "GET",
         params: {
           page,
@@ -20,6 +20,8 @@ export const orderSlice = createApi({
           keyword,
         },
       }),
+      transformResponse: (response: any) => response?.data,
+
     }),
     getMyOrders: builder.query({
       query: ({ page, limit, keyword }) => ({
@@ -33,12 +35,12 @@ export const orderSlice = createApi({
       }),
     }),
     getOrderById: builder.query({
-      query: (id) => `/order-by-id/${id}`,
+      query: (id) => `/by-id/${id}`,
       transformResponse: (response: any) => response?.data,
     }),
     updateOrderStatus: builder.mutation({
       query: ({ id, body }) => ({
-        url: `/update-order-status/${id}`,
+        url: `/${id}`,
         method: "PUT",
         body,
       }),

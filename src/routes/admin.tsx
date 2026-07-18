@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { logout, selectUser, setUser } from "@/redux/reducers/userSlice";
 import { useLoginMutation } from "@/redux/services/authSlice";
 import { useAddToCategoryMutation, useDeleteCategoryMutation, useGetAllCategoriesWithSubCategoriesQuery, useUpdateCategoryMutation } from "@/redux/services/categorySlice";
+import { useGetAllOrdersQuery, useUpdateOrderStatusMutation } from "@/redux/services/orderSlice";
 import { useAddProductMutation, useDeleteProductMutation, useGetAllProductsQuery, useUpdateProductMutation } from "@/redux/services/productSlice";
 import { useGetAllUsersQuery, useToggleUserStatusMutation } from "@/redux/services/userManagement";
 import { jsPDF } from "jspdf";
@@ -781,84 +782,302 @@ function BulkImport({ onClose, onImport }: { onClose: () => void; onImport: (row
 }
 
 /* ---------- Orders ---------- */
-function OrdersView() {
-  const { orders, updateOrderStatus, deleteOrder } = useAdmin();
+// function OrdersView() {
+//   const { orders, updateOrderStatus, deleteOrder } = useAdmin();
+//   const [q, setQ] = useState("");
+//   const [status, setStatus] = useState<string>("");
+//   const [openOrder, setOpenOrder] = useState<AdminOrder | null>(null);
+
+//     const [pagination, setPagination] = useState({
+//         page: 1,
+//         limit: 10,
+//         keyword: ""
+//     })
+//     const { data, isLoading, refetch } = useGetAllOrdersQuery({ ...pagination }, { refetchOnMountOrArgChange: true})
+//     const [updateOrder] = useUpdateOrderStatusMutation()
+
+
+//   const filtered = orders.filter((o) =>
+//     (!q || o.id.toLowerCase().includes(q.toLowerCase()) || o.customer.toLowerCase().includes(q.toLowerCase())) &&
+//     (!status || o.status === status),
+//   );
+
+//   const exportPdf = () => {
+//     const doc = new jsPDF();
+//     doc.setFontSize(16); doc.text("PakOvo — Orders", 14, 16);
+//     doc.setFontSize(10); doc.text(new Date().toLocaleString(), 14, 22);
+//     autoTable(doc, {
+//       startY: 28,
+//       head: [["Order", "Customer", "Email", "Date", "Items", "Total", "Status"]],
+//       body: filtered.map((o) => [o.id, o.customer, o.email, o.date, o.items, formatPrice(o.total), o.status]),
+//       styles: { fontSize: 9 },
+//       headStyles: { fillColor: [15, 27, 61] },
+//     });
+//     doc.save("orders.pdf");
+//     toast.success(`Exported ${filtered.length} orders`);
+//   };
+
+//   return (
+//     <>
+//       <ToolbarCard
+//         title="Orders" count={`${orders.length} total`}
+//         search={{ value: q, onChange: setQ, placeholder: "Search orders or customers…" }}
+//         actions={
+//           <>
+//             <select value={status} onChange={(e) => setStatus(e.target.value)} className="h-9 rounded-md border border-input bg-background px-3 text-sm">
+//               <option value="">All statuses</option>
+//               {["Pending", "Paid", "Fulfilled", "Delivered", "Refunded", "Cancelled"].map((s) => <option key={s} value={s}>{s}</option>)}
+//             </select>
+//             <Button variant="outline" size="sm" onClick={exportPdf}><FileDown className="h-4 w-4" /> Export PDF</Button>
+//           </>
+//         }
+//       />
+
+//       <div className="overflow-x-auto rounded-2xl border border-border bg-card">
+//         <table className="w-full min-w-180 text-sm">
+//           <thead className="bg-surface text-left text-xs uppercase tracking-wider text-muted-foreground">
+//             <tr>
+//               <th className="p-3">Order</th><th className="p-3">Customer</th><th className="p-3">Date</th>
+//               <th className="p-3">Total</th><th className="p-3">Status</th><th className="p-3 text-right">Actions</th>
+//             </tr>
+//           </thead>
+//           <tbody className="divide-y divide-border">
+//             {filtered.map((o) => (
+//               <tr key={o.id}>
+//                 <td className="p-3 font-medium">{o.id}</td>
+//                 <td className="p-3 text-muted-foreground">{o.customer}</td>
+//                 <td className="p-3 text-muted-foreground">{o.date}</td>
+//                 <td className="p-3">{formatPrice(o.total)}</td>
+//                 <td className="p-3">
+//                   <select
+//                     value={o.status}
+//                     onChange={(e) => { updateOrderStatus(o.id, e.target.value as AdminOrder["status"]); toast.success(`Order ${o.id} → ${e.target.value}`); }}
+//                     className="h-7 rounded-md border border-input bg-background px-2 text-xs"
+//                   >
+//                     {["Pending", "Paid", "Fulfilled", "Delivered", "Refunded", "Cancelled"].map((s) => <option key={s} value={s}>{s}</option>)}
+//                   </select>
+//                 </td>
+//                 <td className="p-3">
+//                   <div className="flex justify-end gap-1">
+//                     <button onClick={() => setOpenOrder(o)} className="rounded-md p-1.5 hover:bg-secondary" aria-label="View"><Pencil className="h-4 w-4" /></button>
+//                     <button onClick={() => { if (confirm(`Delete order ${o.id}?`)) { deleteOrder(o.id); toast.success("Order deleted"); } }} className="rounded-md p-1.5 text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></button>
+//                   </div>
+//                 </td>
+//               </tr>
+//             ))}
+//           </tbody>
+//         </table>
+//         {filtered.length === 0 && <p className="p-8 text-center text-sm text-muted-foreground">No orders found.</p>}
+//       </div>
+
+//       {openOrder && (
+//         <Modal title={`Order ${openOrder.id}`} onClose={() => setOpenOrder(null)}>
+//           <div className="grid gap-3 text-sm">
+//             <Row label="Customer" value={openOrder.customer} />
+//             <Row label="Email" value={openOrder.email} />
+//             <Row label="Date" value={openOrder.date} />
+//             <Row label="Items" value={String(openOrder.items)} />
+//             <Row label="Total" value={formatPrice(openOrder.total)} />
+//             <Row label="Status" value={<StatusBadge status={openOrder.status} />} />
+//           </div>
+//         </Modal>
+//       )}
+//     </>
+//   );
+// }
+
+
+const STATUS_OPTIONS = ["Pending", "confirmed", "dispatched", "delivered", "cancelled"];
+
+// Adapts a raw API order doc to the shape this component renders.
+// Confirm/adjust field names against your actual API response.
+function mapOrder(o: any) {
+  return {
+    id: o._id ?? o.id,
+    customer: `${o.shippingAddress?.firstName ?? ""} ${o.shippingAddress?.lastName ?? ""}`.trim(),
+    email: o.user?.email ?? o.email ?? "—",
+    date: o.createdAt ? new Date(o.createdAt).toLocaleDateString() : o.date ?? "—",
+    items: Array.isArray(o.products) ? o.products.length : o.products ?? 0,
+    total: o.totalAmount ?? o.totalAmount ?? 0,
+    status: o.status,
+  };
+}
+
+function useDebouncedValue<T>(value: T, delay = 400) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
+}
+
+export function OrdersView() {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<string>("");
-  const [openOrder, setOpenOrder] = useState<AdminOrder | null>(null);
+  const [openOrder, setOpenOrder] = useState<ReturnType<typeof mapOrder> | null>(null);
 
-  const filtered = orders.filter((o) =>
-    (!q || o.id.toLowerCase().includes(q.toLowerCase()) || o.customer.toLowerCase().includes(q.toLowerCase())) &&
-    (!status || o.status === status),
-  );
+  const [pagination, setPagination] = useState({ page: 1, limit: 10 });
+  const debouncedKeyword = useDebouncedValue(q);
+
+  // reset to page 1 whenever the search or status filter changes
+  useEffect(() => {
+    setPagination((p) => ({ ...p, page: 1 }));
+  }, [debouncedKeyword, status]);
+
+  const queryArgs = {
+    page: pagination.page,
+    limit: pagination.limit,
+    keyword: debouncedKeyword,
+    ...(status ? { status } : {}),
+  };
+
+  const { data, isLoading, isFetching, refetch } = useGetAllOrdersQuery(queryArgs, {refetchOnMountOrArgChange: true});
+  const [updateOrder, { isLoading: isUpdatingStatus }] = useUpdateOrderStatusMutation();
+
+  const orders = useMemo(() => (data?.docs ?? []).map(mapOrder), [data]);
+  const totalDocs = data?.totalDocs ?? 0;
+  const totalPages = data?.totalPages ?? 1;
+
+  const handleStatusChange = async (orderId: string, newStatus: string) => {
+    try {
+      await updateOrder({ id: orderId, body: {status:newStatus} }).unwrap();
+      toast.success(`Order ${orderId} → ${newStatus}`);
+      refetch();
+    } catch (err: any) {
+      toast.error(err?.data?.message ?? "Failed to update order status");
+    }
+  };
 
   const exportPdf = () => {
     const doc = new jsPDF();
-    doc.setFontSize(16); doc.text("PakOvo — Orders", 14, 16);
-    doc.setFontSize(10); doc.text(new Date().toLocaleString(), 14, 22);
+    doc.setFontSize(16);
+    doc.text("PakOvo — Orders", 14, 16);
+    doc.setFontSize(10);
+    doc.text(new Date().toLocaleString(), 14, 22);
     autoTable(doc, {
       startY: 28,
       head: [["Order", "Customer", "Email", "Date", "Items", "Total", "Status"]],
-      body: filtered.map((o) => [o.id, o.customer, o.email, o.date, o.items, formatPrice(o.total), o.status]),
+      body: orders.map((o:any) => [o.id, o.customer, o.email, o.date, o.items, formatPrice(o.total), o.status]),
       styles: { fontSize: 9 },
       headStyles: { fillColor: [15, 27, 61] },
     });
     doc.save("orders.pdf");
-    toast.success(`Exported ${filtered.length} orders`);
+    toast.success(`Exported ${orders.length} orders`);
   };
 
   return (
     <>
       <ToolbarCard
-        title="Orders" count={`${orders.length} total`}
+        title="Orders"
+        count={`${totalDocs} total`}
         search={{ value: q, onChange: setQ, placeholder: "Search orders or customers…" }}
         actions={
           <>
-            <select value={status} onChange={(e) => setStatus(e.target.value)} className="h-9 rounded-md border border-input bg-background px-3 text-sm">
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+            >
               <option value="">All statuses</option>
-              {["Pending", "Paid", "Fulfilled", "Delivered", "Refunded", "Cancelled"].map((s) => <option key={s} value={s}>{s}</option>)}
+              {STATUS_OPTIONS.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
             </select>
-            <Button variant="outline" size="sm" onClick={exportPdf}><FileDown className="h-4 w-4" /> Export PDF</Button>
+            <Button variant="outline" size="sm" onClick={exportPdf}>
+              <FileDown className="h-4 w-4" /> Export PDF
+            </Button>
           </>
         }
       />
 
       <div className="overflow-x-auto rounded-2xl border border-border bg-card">
-        <table className="w-full min-w-[720px] text-sm">
+        <table className="w-full min-w-180 text-sm">
           <thead className="bg-surface text-left text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
-              <th className="p-3">Order</th><th className="p-3">Customer</th><th className="p-3">Date</th>
-              <th className="p-3">Total</th><th className="p-3">Status</th><th className="p-3 text-right">Actions</th>
+              <th className="p-3">Order ID</th>
+              <th className="p-3">Customer</th>
+              <th className="p-3">email</th>
+              <th className="p-3">Date</th>
+              <th className="p-3">Total</th>
+              <th className="p-3">Status</th>
+              <th className="p-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {filtered.map((o) => (
-              <tr key={o.id}>
-                <td className="p-3 font-medium">{o.id}</td>
-                <td className="p-3 text-muted-foreground">{o.customer}</td>
-                <td className="p-3 text-muted-foreground">{o.date}</td>
-                <td className="p-3">{formatPrice(o.total)}</td>
-                <td className="p-3">
-                  <select
-                    value={o.status}
-                    onChange={(e) => { updateOrderStatus(o.id, e.target.value as AdminOrder["status"]); toast.success(`Order ${o.id} → ${e.target.value}`); }}
-                    className="h-7 rounded-md border border-input bg-background px-2 text-xs"
-                  >
-                    {["Pending", "Paid", "Fulfilled", "Delivered", "Refunded", "Cancelled"].map((s) => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </td>
-                <td className="p-3">
-                  <div className="flex justify-end gap-1">
-                    <button onClick={() => setOpenOrder(o)} className="rounded-md p-1.5 hover:bg-secondary" aria-label="View"><Pencil className="h-4 w-4" /></button>
-                    <button onClick={() => { if (confirm(`Delete order ${o.id}?`)) { deleteOrder(o.id); toast.success("Order deleted"); } }} className="rounded-md p-1.5 text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></button>
-                  </div>
+            {isLoading ? (
+              <tr>
+                <td colSpan={6} className="p-8 text-center text-sm text-muted-foreground">
+                  Loading orders…
                 </td>
               </tr>
-            ))}
+            ) : (
+              orders.map((o:any) => (
+                <tr key={o.id}>
+                  <td className="p-3 font-medium">{o.id}</td>
+                  <td className="p-3 text-muted-foreground">{o.customer}</td>
+                  <td className="p-3 text-muted-foreground">{o.email}</td>
+                  <td className="p-3 text-muted-foreground">{o.date}</td>
+                  <td className="p-3">{formatPrice(o.total)}</td>
+                  <td className="p-3">
+                    <select
+                      value={o.status}
+                      disabled={isUpdatingStatus}
+                      onChange={(e) => handleStatusChange(o.id, e.target.value)}
+                      className="h-7 rounded-md border border-input bg-background px-2 text-xs disabled:opacity-50"
+                    >
+                      {STATUS_OPTIONS.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="p-3">
+                    <div className="flex justify-end gap-1">
+                      <button
+                        onClick={() => setOpenOrder(o)}
+                        className="rounded-md p-1.5 hover:bg-secondary"
+                        aria-label="View"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
-        {filtered.length === 0 && <p className="p-8 text-center text-sm text-muted-foreground">No orders found.</p>}
+        {!isLoading && orders.length === 0 && (
+          <p className="p-8 text-center text-sm text-muted-foreground">No orders found.</p>
+        )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
+          <span>
+            Page {pagination.page} of {totalPages} {isFetching && "· refreshing…"}
+          </span>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={pagination.page <= 1}
+              onClick={() => setPagination((p) => ({ ...p, page: p.page - 1 }))}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={pagination.page >= totalPages}
+              onClick={() => setPagination((p) => ({ ...p, page: p.page + 1 }))}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
 
       {openOrder && (
         <Modal title={`Order ${openOrder.id}`} onClose={() => setOpenOrder(null)}>
@@ -876,6 +1095,9 @@ function OrdersView() {
   );
 }
 
+
+
+
 /* ---------- Customers ---------- */
 function CustomersView() {
  const [toggledUserId, setToggledUserId] = useState("");
@@ -886,7 +1108,6 @@ function CustomersView() {
         keyword: ""
     })
     const { data , isLoading, refetch } = useGetAllUsersQuery({ ...pagination }, { refetchOnMountOrArgChange: true})
-    console.log("🚀 ~ CustomersView ~ data:", data)
     const [toggleuser, {isLoading : isToggleLoading}] = useToggleUserStatusMutation()
 
 
