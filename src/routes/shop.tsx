@@ -1,11 +1,10 @@
-import { createFileRoute, Link, useNavigate } from "@/lib/router-compat";
-import { useMemo, useState, type FormEvent } from "react";
-import type { Product } from "@/data/products";
 import { ProductGrid } from "@/components/product/ProductCard";
-import { useWishlist } from "@/lib/wishlist-store";
-import { z } from "zod";
-import { useGetAllProductsQuery } from "@/redux/services/productSlice";
+import type { Product } from "@/data/products";
+import { createFileRoute, Link, useNavigate } from "@/lib/router-compat";
 import { useGetAllCategoriesQuery } from "@/redux/services/categorySlice";
+import { useGetAllProductsQuery } from "@/redux/services/productSlice";
+import { useMemo, useState, type FormEvent } from "react";
+import { z } from "zod";
 
 const search = z.object({
   q: z.string().optional(),
