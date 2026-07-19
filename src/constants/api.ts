@@ -2,11 +2,11 @@ const { hostname } = window.location;
 
 const servers = {
   local: "http://localhost:3000",
-  live: "https://pakovo.pk",
+  live: "https://api.pakovo.com",
 };
 
 var URL;
-if (hostname.includes("pakovo.pk")) URL = servers.live;
+if (hostname.includes("pakovo.com")) URL = servers.live;
 else URL = servers.local;
 
 export const SOCKET_URL = `${URL}`;
