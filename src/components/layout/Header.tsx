@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Button } from "../ui/button";
 import { MegaMenu } from "./MegaMenu";
 import { useGetAllCategoriesQuery } from "@/redux/services/categorySlice";
+import { createPortal } from "react-dom";
 
 export function Header() {
   const dispatch = useDispatch();
@@ -197,64 +198,62 @@ export function Header() {
           </div>
         </div>
       )}
-
-      {mobileOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
-          <div className="absolute left-0 top-0 h-full w-[85%] max-w-sm overflow-y-auto bg-background p-6">
-            <div className="mb-6 flex items-center justify-between">
-              <Link to="/" onClick={() => setMobileOpen(false)} className="flex items-center gap-2">
-                <img src={logo} alt="PakOvo" className="h-10 w-10 object-contain" />
-                <span className="font-display text-lg font-bold">
-                  <span className="text-brand">Pak</span>
-                  <span className="text-navy">Ovo</span>
-                </span>
-              </Link>
-              <button aria-label="Close" onClick={() => setMobileOpen(false)} className="p-2">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <form onSubmit={submit} className="relative mb-6">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                type="search"
-                placeholder="Search..."
-                className="h-11 w-full rounded-full border border-input bg-secondary/50 pl-10 pr-4 text-sm outline-none focus:border-brand focus:bg-background"
-              />
-            </form>
-            <nav className="space-y-1">
-              <MobileLink to="/" onClick={() => setMobileOpen(false)}>
-                Home
-              </MobileLink>
-              <MobileLink to="/shop" onClick={() => setMobileOpen(false)}>
-                Shop all
-              </MobileLink>
-              {categories.map((c) => (
-                <Link
-                  key={c.slug}
-                  to="/collections/$slug"
-                  params={{ slug: c.slug }}
-                  onClick={() => setMobileOpen(false)}
-                  className="block rounded-lg px-3 py-3 text-base font-medium hover:bg-secondary"
-                >
-                  {c.name}
-                </Link>
-              ))}
-              <MobileLink to="/wishlist" onClick={() => setMobileOpen(false)}>
-                Wishlist
-              </MobileLink>
-              <MobileLink to="/blog" onClick={() => setMobileOpen(false)}>
-                Journal
-              </MobileLink>
-              <MobileLink to="/account" onClick={() => setMobileOpen(false)}>
-                My account
-              </MobileLink>
-            </nav>
-          </div>
-        </div>
-      )}
+{createPortal(
+  <div
+    className={`fixed inset-0 z-50 lg:hidden transition-opacity duration-300 ${
+      mobileOpen ? "opacity-100" : "pointer-events-none opacity-0"
+    }`}
+  >
+    <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
+    <div
+      className={`absolute left-0 top-0 h-full w-[85%] max-w-sm overflow-y-auto bg-background p-6 transition-transform duration-300 ease-out ${
+        mobileOpen ? "translate-x-0" : "-translate-x-full"
+      }`}
+    >
+      <div className="mb-6 flex items-center justify-between">
+        <Link to="/" onClick={() => setMobileOpen(false)} className="flex items-center gap-2">
+          <img src={logo} alt="PakOvo" className="h-10 w-10 object-contain" />
+          <span className="font-display text-lg font-bold">
+            <span className="text-brand">Pak</span>
+            <span className="text-navy">Ovo</span>
+          </span>
+        </Link>
+        <button aria-label="Close" onClick={() => setMobileOpen(false)} className="p-2">
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+      <nav className="space-y-1">
+        <MobileLink to="/" onClick={() => setMobileOpen(false)}>
+          Home
+        </MobileLink>
+        <MobileLink to="/shop" onClick={() => setMobileOpen(false)}>
+          Shop
+        </MobileLink>
+        {categories.map((c) => (
+          <Link
+            key={c.slug}
+            to="/collections/$slug"
+            params={{ slug: c.slug }}
+            onClick={() => setMobileOpen(false)}
+            className="block rounded-lg px-3 py-3 text-base font-medium hover:bg-secondary"
+          >
+            {c.name}
+          </Link>
+        ))}
+        <MobileLink to="/wishlist" onClick={() => setMobileOpen(false)}>
+          Wishlist
+        </MobileLink>
+        <MobileLink to="/blog" onClick={() => setMobileOpen(false)}>
+          Journal
+        </MobileLink>
+        <MobileLink to="/account" onClick={() => setMobileOpen(false)}>
+          My account
+        </MobileLink>
+      </nav>
+    </div>
+  </div>,
+  document.body
+)}
     </header>
   );
 }
