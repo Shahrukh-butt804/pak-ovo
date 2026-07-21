@@ -319,7 +319,7 @@ function BestSellersSection() {
     <section className="bg-surface">
       <div className="container-px mx-auto max-w-7xl py-16 md:py-24">
         <SectionHeader eyebrow="Customer favorites" title="Best sellers" link="/shop" />
-        <ProductGrid products={bestsellers().slice(0, 8)} />
+        <ProductGrid products={bestsellers().slice(0, 8)} isFromDB={false} />
       </div>
     </section>
   );

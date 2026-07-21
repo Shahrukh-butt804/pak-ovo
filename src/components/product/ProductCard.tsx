@@ -129,11 +129,11 @@ export function ProductCard({
   );
 }
 
-export function ProductGrid({ products, refetch }: { products: Product[]; refetch?: any }) {
+export function ProductGrid({ products, refetch ,isFromDB = true }: { products: Product[]; refetch?: any ,isFromDB?: any }) {
   return (
     <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">
       {products.map((p) => (
-        <ProductCard key={p.id} product={p} refetch={refetch} />
+        <ProductCard key={p.id} product={p} refetch={refetch} isFromDB={isFromDB} />
       ))}
     </div>
   );
