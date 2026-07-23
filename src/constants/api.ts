@@ -7,7 +7,7 @@ const servers = {
 
 var URL;
 if (hostname.includes("pakovo.com")) URL = servers.live;
-else URL = servers.local;
+else URL = servers.live;
 
 export const SOCKET_URL = `${URL}`;
 export const UPLOADS_URL = URL + "/";

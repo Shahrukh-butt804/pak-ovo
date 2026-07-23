@@ -120,7 +120,7 @@ export function CartDrawer() {
                         {image ? (
                           <img
                             src={UPLOADS_URL + image}
-                            crossOrigin="anonymous"
+                            // crossOrigin="anonymous"
                             alt={title}
                             className="h-full w-full object-cover"
                           />

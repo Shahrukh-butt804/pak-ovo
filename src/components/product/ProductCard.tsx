@@ -65,7 +65,7 @@ export function ProductCard({
         <img
           src={isFromDB ? UPLOADS_URL + product.image : product.image}
           alt={product.name}
-          crossOrigin="anonymous"
+          // crossOrigin="anonymous"
           loading="lazy"
           className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
         />

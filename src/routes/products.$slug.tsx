@@ -99,7 +99,7 @@ function ProductPage() {
             <img
               src={UPLOADS_URL + gallery[activeImg]}
               alt={product.name}
-              crossOrigin="anonymous"
+              // crossOrigin="anonymous"
               className="h-full w-full object-cover transition-transform duration-200"
               style={
                 zoom
@@ -122,7 +122,7 @@ function ProductPage() {
               >
                 <img
                   src={UPLOADS_URL + src}
-                  crossOrigin="anonymous"
+                  // crossOrigin="anonymous"
                   alt="gallery"
                   className="h-full w-full object-cover"
                 />

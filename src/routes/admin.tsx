@@ -518,7 +518,9 @@ export function ProductForm({
           <div>
             <label className="block text-xs font-medium text-muted-foreground">Image</label>
             <div className="mt-1 aspect-square overflow-hidden rounded-lg border border-border bg-surface">
-              <img src={getImageUrl(imgPreview)} crossOrigin="anonymous" alt="" className="h-full w-full object-cover" />
+              <img src={getImageUrl(imgPreview)}
+              //  crossOrigin="anonymous"
+                alt="" className="h-full w-full object-cover" />
             </div>
             <label className="mt-2 flex cursor-pointer items-center justify-center gap-1 rounded-md border border-dashed border-border py-2 text-xs hover:bg-secondary">
               <Upload className="h-3 w-3" /> Upload
@@ -643,7 +645,9 @@ export function ProductForm({
                     )}
                     <div className="aspect-square w-full overflow-hidden rounded-md bg-surface">
                       {cat.image && (
-                        <img src={getImageUrl(cat.image)} crossOrigin="anonymous" alt="category" className="h-full w-full object-cover" />
+                        <img src={getImageUrl(cat.image)} 
+                        // crossOrigin="anonymous"
+                         alt="category" className="h-full w-full object-cover" />
                       )}
                     </div>
                     <span className="line-clamp-1 text-[11px] capitalize">{cat.name}</span>
@@ -1271,7 +1275,7 @@ export function CategoriesView() {
             <div className="relative h-32 w-full overflow-hidden">
               <img
                 src={UPLOADS_URL + c.image}
-                crossOrigin="anonymous"
+                // crossOrigin="anonymous"
                 alt={c.name}
                 className="h-full w-full object-cover transition-transform group-hover:scale-105"
               />
@@ -1398,7 +1402,9 @@ function CategoryForm({
           <div>
             <label className="block text-xs font-medium text-muted-foreground">Image</label>
             <div className="mt-1 aspect-square overflow-hidden rounded-lg border border-border bg-surface">
-              <img src={imgPreview} crossOrigin="anonymous" alt="image" className="h-full w-full object-cover" />
+              <img src={imgPreview}
+              //  crossOrigin="anonymous"
+                alt="image" className="h-full w-full object-cover" />
             </div>
             <label className="mt-2 flex cursor-pointer items-center justify-center gap-1 rounded-md border border-dashed border-border py-2 text-xs hover:bg-secondary">
               <Upload className="h-3 w-3" /> Upload

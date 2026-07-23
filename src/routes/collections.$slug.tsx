@@ -145,7 +145,7 @@ const handleSubCategoryClick = (nextSlug: string) => {
           <div className="hidden overflow-hidden rounded-2xl border border-border md:block">
             <img
               src={UPLOADS_URL + category?.image}
-              crossOrigin="anonymous"
+              // crossOrigin="anonymous"
               alt={categoryLabel}
               className="h-72 w-full object-cover"
             />
