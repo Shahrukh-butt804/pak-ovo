@@ -87,7 +87,8 @@ export function MegaMenu({ onNavigate }: MegaMenuProps) {
                   <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg">
                     <img
                       src={resolveImage(cat.image)}
-                      // crossOrigin="anonymous"
+                      crossOrigin="anonymous"
+                      loading="lazy"
                       alt={cat.name ?? "Category"}
                       className="h-full w-full object-cover transition-transform duration-500 group-hover/cat:scale-110"
                     />

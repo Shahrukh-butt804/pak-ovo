@@ -53,9 +53,9 @@ export const Route = createFileRoute("/collections/$slug")({
 });
 
 function Collection() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   const params = useParams();
-  const { slug ,subCategory}: any = params; // category slug, constant from URL
+  const { slug, subCategory }: any = params; // category slug, constant from URL
 
   const [sort, setSort] = useState("popular");
   const [subCategorySlug, setSubCategorySlug] = useState<string>(subCategory || "");
@@ -104,12 +104,12 @@ function Collection() {
     [slug],
   );
 
-const handleSubCategoryClick = (nextSlug: string) => {
-  setSubCategorySlug(nextSlug);
-  setPage(1);
+  const handleSubCategoryClick = (nextSlug: string) => {
+    setSubCategorySlug(nextSlug);
+    setPage(1);
 
-  navigate({ to: "/collections/$slug/$subCategory", params: { slug, subCategory: nextSlug } });
-};
+    navigate({ to: "/collections/$slug/$subCategory", params: { slug, subCategory: nextSlug } });
+  };
 
   const handleSortChange = (value: string) => {
     setSort(value);
@@ -145,8 +145,9 @@ const handleSubCategoryClick = (nextSlug: string) => {
           <div className="hidden overflow-hidden rounded-2xl border border-border md:block">
             <img
               src={UPLOADS_URL + category?.image}
-              // crossOrigin="anonymous"
+              crossOrigin="anonymous"
               alt={categoryLabel}
+              loading="lazy"
               className="h-72 w-full object-cover"
             />
           </div>
