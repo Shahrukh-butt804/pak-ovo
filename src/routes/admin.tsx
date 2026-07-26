@@ -1204,7 +1204,7 @@ function CustomersView() {
 
       <div className="overflow-x-auto rounded-2xl border border-border bg-card">
      <Table
-                tableData={{ data: data?.docs || [], exlucdedFields: ["__v", "updatedAt", "_id", "refreshToken", "password", "otp", "role","reviews","rating"] }}
+                tableData={{ data: data?.docs || [], exlucdedFields: ["__v", "updatedAt", "_id", "refreshToken", "password", "otp","reviews","rating"] }}
                 setPagination={setPagination}
                 pagination={data || {}}
                 onDelete={handleDelete}
