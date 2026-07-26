@@ -21,6 +21,7 @@ import { useAddToCategoryMutation, useDeleteCategoryMutation, useGetAllCategorie
 import { useGetAllOrdersQuery, useUpdateOrderStatusMutation } from "@/redux/services/orderSlice";
 import { useAddProductMutation, useDeleteProductMutation, useGetAllProductsQuery, useUpdateProductMutation } from "@/redux/services/productSlice";
 import { useGetAllUsersQuery, useToggleUserStatusMutation } from "@/redux/services/userManagement";
+import { fi } from "date-fns/locale";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import {
@@ -56,7 +57,7 @@ export const Route = createFileRoute("/admin")({
 
 function AdminGate() {
   const user = useSelector(selectUser)
-  if (!user || user.role !== "admin") return <AdminLogin />;
+  if (!user || (user.role !== "admin" && user.role !== "manager")) return <AdminLogin />;
   return <Admin />;
 }
 
@@ -123,20 +124,47 @@ function AdminLogin() {
 
 type View = "dashboard" | "products" | "categories" | "orders" | "customers" | "discounts" | "banners" | "reviews" | "content" | "blog" | "reports" | "settings";
 
-const nav: { key: View; icon: any; label: string }[] = [
-  { key: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { key: "products", icon: Package, label: "Products" },
-  { key: "categories", icon: Tag, label: "Categories" },
-  { key: "orders", icon: ShoppingCart, label: "Orders" },
-  { key: "customers", icon: Users, label: "Customers" },
-  { key: "discounts", icon: Megaphone, label: "Discounts" },
-  { key: "banners", icon: ImageIcon, label: "Banners" },
-  { key: "reviews", icon: Star, label: "Reviews" },
-  { key: "content", icon: FileText, label: "Content (CMS)" },
-  { key: "blog", icon: FileText, label: "Blog" },
-  { key: "reports", icon: BarChart3, label: "Reports" },
-  { key: "settings", icon: Settings, label: "Settings" },
-];
+// const nav: { key: View; icon: any; label: string }[] = [
+//   { key: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
+//   { key: "products", icon: Package, label: "Products" },
+//   { key: "categories", icon: Tag, label: "Categories" },
+//   { key: "orders", icon: ShoppingCart, label: "Orders" },
+//   { key: "customers", icon: Users, label: "Customers" },
+//   { key: "discounts", icon: Megaphone, label: "Discounts" },
+//   { key: "banners", icon: ImageIcon, label: "Banners" },
+//   { key: "reviews", icon: Star, label: "Reviews" },
+//   { key: "content", icon: FileText, label: "Content (CMS)" },
+//   { key: "blog", icon: FileText, label: "Blog" },
+//   { key: "reports", icon: BarChart3, label: "Reports" },
+//   { key: "settings", icon: Settings, label: "Settings" },
+// ];
+
+function getNavItems(): { key: View; icon: any; label: string }[] {
+  const user = useSelector(selectUser)
+
+  const protectedRoutes:any = [
+    { key: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
+    { key: "products", icon: Package, label: "Products" },
+    { key: "categories", icon: Tag, label: "Categories" },
+    { key: "orders", icon: ShoppingCart, label: "Orders" },
+    { key: "customers", icon: Users, label: "Customers" },
+  ]
+
+  if(user.role === "admin"){
+    const adminOnlyRoutes = [
+    { key: "discounts", icon: Megaphone, label: "Discounts" },
+    { key: "banners", icon: ImageIcon, label: "Banners" },
+    { key: "reviews", icon: Star, label: "Reviews" },
+    { key: "content", icon: FileText, label: "Content (CMS)" },
+    { key: "blog", icon: FileText, label: "Blog" },
+    { key: "reports", icon: BarChart3, label: "Reports" },
+    { key: "settings", icon: Settings, label: "Settings" },
+    ]
+    protectedRoutes.push(...adminOnlyRoutes)
+  }
+   
+  return protectedRoutes
+}
 
 function Admin() {
   const dispatch = useDispatch();
@@ -210,7 +238,7 @@ function Admin() {
 function NavList({ view, setView }: { view: View; setView: (v: View) => void }) {
   return (
     <ul className="space-y-1">
-      {nav.map(({ key, icon: Icon, label }) => (
+      {getNavItems().map(({ key, icon: Icon, label }) => (
         <li key={key}>
           <button
             onClick={() => setView(key)}
@@ -1111,7 +1139,7 @@ function CustomersView() {
         limit: 10,
         keyword: ""
     })
-    const { data , isLoading, refetch } = useGetAllUsersQuery({ ...pagination }, { refetchOnMountOrArgChange: true})
+    const { data , isLoading, refetch } = useGetAllUsersQuery({ ...pagination }, {refetchOnFocus:true, refetchOnMountOrArgChange: true})
     const [toggleuser, {isLoading : isToggleLoading}] = useToggleUserStatusMutation()
 
 
@@ -1130,10 +1158,6 @@ function CustomersView() {
     }
     setToggledUserId("")
   };
-
-  
-
-
 
   const exportPdf = () => {
     const doc = new jsPDF();
@@ -1169,7 +1193,7 @@ function CustomersView() {
   return (
     <>
       <ToolbarCard
-        title="Customers" count={`Total ${data.totalDocs || 0} Customers`}
+        title="Customers" count={`Total ${data?.totalDocs || 0} Customers`}
         actions={
           <>
             <Button variant="outline" size="sm" onClick={exportCsv}><Download className="h-4 w-4" /> CSV</Button>
@@ -1180,7 +1204,7 @@ function CustomersView() {
 
       <div className="overflow-x-auto rounded-2xl border border-border bg-card">
      <Table
-                tableData={{ data: data.docs, exlucdedFields: ["__v", "updatedAt", "_id", "refreshToken", "password", "otp", "role","reviews","rating"] }}
+                tableData={{ data: data?.docs || [], exlucdedFields: ["__v", "updatedAt", "_id", "refreshToken", "password", "otp", "role","reviews","rating"] }}
                 setPagination={setPagination}
                 pagination={data || {}}
                 onDelete={handleDelete}
