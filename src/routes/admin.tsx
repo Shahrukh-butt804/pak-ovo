@@ -2,6 +2,7 @@ import catFallback from "@/assets/cat-cosmetics.jpg";
 import Spinner from "@/components/spinner";
 import Table from "@/components/table";
 import { Button } from "@/components/ui/button";
+import { RichEditor } from "@/components/ui/richEditor";
 import { UPLOADS_URL } from "@/constants/api";
 import {
   parseCsv,
@@ -381,7 +382,9 @@ function ProductsView() {
 
       <div className="overflow-x-auto rounded-2xl border border-border bg-card">
          <Table
-                tableData={{ data: data.docs, exlucdedFields: ["__v", "updatedAt", "_id", "slug", "image", "description", "wished","reviews","rating"] }}
+                tableData={{ 
+                  data: data.docs,
+                  exlucdedFields: ["__v", "updatedAt", "_id", "slug", "image", "description", "wished","reviews","rating" , "metaTitle","metaDescription","productOverview","benefits","howToUse","ingredients","additionalInformation","faqs"] }}
                 setPagination={setPagination}
                 pagination={data || {}}
                 onEdit={setEditing}
@@ -423,6 +426,317 @@ function getImageUrl(path?: string) {
   return `${UPLOADS_URL}${path.replace(/\\/g, "/")}`;
 }
 
+// export function ProductForm({
+//   initial,
+//   onClose,
+//   onSave,
+// }: {
+//   initial: any;
+//   onClose: any;
+//   onSave?: any;
+// }) {
+//   const [catPage, setCatPage] = useState(1);
+
+//   const { data: categoriesData, isLoading: isLoadingCategories } =
+//     useGetAllCategoriesWithSubCategoriesQuery({ page: catPage, limit: 10 }) as {
+//       data: any;
+//       isLoading: boolean;
+//     };
+
+//   const [updateProduct, { isLoading: isUpdating }] = useUpdateProductMutation();
+//   const [addProduct, { isLoading: isCreating }] = useAddProductMutation();
+//   const isSaving = isUpdating || isCreating;
+
+//   const [form, setForm] = useState<any>(() => ({
+//     title: initial?.title ?? "",
+//     description: initial?.description ?? "",
+//     price: initial?.price ?? 0,
+//     discountedPrice: initial?.discountedPrice ?? "",
+//     rating: initial?.rating ?? 4.5,
+//     reviews: initial?.reviews ?? 0,
+//     inStock: initial?.inStock ?? true,
+//     category: initial?.category?._id ?? "",
+//     subCategory: initial?.subCategory?._id ?? "",
+//   }));
+
+//   const [selectedCategoryLabel, setSelectedCategoryLabel] = useState(initial?.category?.name ?? "");
+//   const [selectedSubCategoryLabel, setSelectedSubCategoryLabel] = useState(initial?.subCategory?.name ?? "");
+
+//   const [imageFile, setImageFile] = useState<File | null>(null);
+//   const [imgPreview, setImgPreview] = useState<string>(getImageUrl(initial?.image));
+
+//   useEffect(() => {
+//     return () => {
+//       if (imgPreview.startsWith("blob:")) URL.revokeObjectURL(imgPreview);
+//     };
+//   }, [imgPreview]);
+
+//   const handleImage = (file: File | null) => {
+//     if (!file) return;
+//     if (!file.type.startsWith("image/")) {
+//       toast.error("Please select an image file");
+//       return;
+//     }
+//     setImageFile(file);
+//     setImgPreview(URL.createObjectURL(file));
+//   };
+
+//   const categories = categoriesData?.docs ?? [];
+//   const totalPages = categoriesData?.totalPages ?? 1;
+
+//   const selectedCategory = useMemo(
+//     () => categories.find((c:any) => c._id === form.category),
+//     [categories, form.category],
+//   );
+//   const subCategoryOptions = selectedCategory?.subCategories ?? [];
+
+//   const handleSelectCategory = (cat: any) => {
+//     setForm((f:any) => ({ ...f, category: cat._id, subCategory: "" }));
+//     setSelectedCategoryLabel(cat.name);
+//     setSelectedSubCategoryLabel("");
+//   };
+
+//   const handleSelectSubCategory = (sub: any) => {
+//     setForm((f:any) => ({ ...f, subCategory: sub._id }));
+//     setSelectedSubCategoryLabel(sub.name);
+//   };
+
+//   const handleSubmit = async (e: React.FormEvent) => {
+//     e.preventDefault();
+
+//     if (!form.title.trim()) return toast.error("Title is required");
+//     if (!form.category) return toast.error("Please select a category");
+//     if (!form.subCategory) return toast.error("Please select a subcategory");
+//     if (form.price < 0) return toast.error("Price must be positive");
+//     if (form.discountedPrice !== "" && Number(form.discountedPrice) > form.price) {
+//       return toast.error("Discounted price can't exceed price");
+//     }
+//     if (!initial && !imageFile) return toast.error("Please upload a product image");
+
+//     const fd = new FormData();
+//     fd.append("title", form.title.trim());
+//     fd.append("description", form.description);
+//     fd.append("category", form.category);
+//     fd.append("subCategory", form.subCategory);
+//     fd.append("price", String(form.price));
+//     fd.append("discountedPrice", form.discountedPrice === "" ? "" : String(form.discountedPrice));
+//     fd.append("rating", String(form.rating));
+//     fd.append("reviews", String(form.reviews));
+//     fd.append("inStock", String(form.inStock));
+//     if (imageFile) fd.append("image", imageFile);
+
+//     console.log(form.discountedPrice)
+//     try {
+//       if (initial) {
+//         await updateProduct({ id: initial._id, body: fd }).unwrap();
+//         toast.success("Product updated");
+//       } else {
+//         await addProduct(fd).unwrap();
+//         toast.success("Product created");
+//       }
+//       onSave?.();
+//       onClose();
+//     } catch (err: any) {
+//       toast.error(err?.data?.message || err?.data?.errors[0]?.msg || "Something went wrong");
+//     }
+//   };
+
+//   return (
+//     <Modal title={initial ? "Edit product" : "New product"} onClose={onClose}>
+//       <form onSubmit={handleSubmit} className="space-y-5">
+//         {/* Image + basic fields */}
+//         <div className="grid gap-4 sm:grid-cols-[120px_1fr]">
+//           <div>
+//             <label className="block text-xs font-medium text-muted-foreground">Image</label>
+//             <div className="mt-1 aspect-square overflow-hidden rounded-lg border border-border bg-surface">
+//               <img src={getImageUrl(imgPreview)}
+//               //  crossOrigin="anonymous"
+//                 alt="" className="h-full w-full object-cover" />
+//             </div>
+//             <label className="mt-2 flex cursor-pointer items-center justify-center gap-1 rounded-md border border-dashed border-border py-2 text-xs hover:bg-secondary">
+//               <Upload className="h-3 w-3" /> Upload
+//               <input
+//                 type="file"
+//                 accept="image/*"
+//                 className="hidden"
+//                 onChange={(e) => handleImage(e.target.files?.[0] ?? null)}
+//               />
+//             </label>
+//           </div>
+
+//           <div className="space-y-3">
+//             <Field
+//               label="Title"
+//               required
+//               value={form.title}
+//               onChange={(v) => setForm((f:any) => ({ ...f, title: v }))}
+//             />
+//             <div className="grid gap-2 sm:grid-cols-2">
+//               <Field
+//                 label="Price"
+//                 type="number"
+//                 value={String(form.price)}
+//                 onChange={(v) => setForm((f:any) => ({ ...f, price: Number(v) }))}
+//               />
+//               <Field
+//                 label="Discounted price"
+//                 type="number"
+//                 value={form.discountedPrice === "" ? "" : String(form.discountedPrice)}
+//                 onChange={(v) => setForm((f:any) => ({ ...f, discountedPrice: v === "" ? "" : Number(v) }))}
+//               />
+//             </div>
+
+//                <div className="grid gap-2 sm:grid-cols-2">
+//               <Field
+//                 label="Reviews"
+//                 type="number"
+//                 value={String(form.reviews)}
+//                 onChange={(v) => setForm((f:any) => ({ ...f, reviews: Number(v) }))}
+//               />
+//             <Field
+//               label="Rating"
+//               type="number"
+//               value={String(form.rating)}
+//               onChange={(v) => setForm((f:any) => ({ ...f, rating: Number(v) }))}
+//             />
+//             </div>
+//             <label className="block">
+//               <span className="mb-1 block text-xs font-medium text-muted-foreground">Description</span>
+//               <textarea
+//                 value={form.description}
+//                 onChange={(e) => setForm((f:any) => ({ ...f, description: e.target.value }))}
+//                 rows={3}
+//                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
+//               />
+//             </label>
+//             <label className="flex items-center gap-2 text-sm">
+//               <input
+//                 type="checkbox"
+//                 checked={form.inStock}
+//                 onChange={(e) => setForm((f:any) => ({ ...f, inStock: e.target.checked }))}
+//               />
+//               In stock
+//             </label>
+//           </div>
+//         </div>
+
+//         {/* Category picker (paginated) */}
+//         <div className="border-t border-border pt-4">
+//           <div className="mb-2 flex items-center justify-between">
+//             <span className="text-xs font-medium text-muted-foreground">
+//               Category
+//               {selectedCategoryLabel && <span className="ml-1 text-foreground">— {selectedCategoryLabel}</span>}
+//             </span>
+//             {totalPages > 1 && (
+//               <div className="flex items-center gap-1 text-xs">
+//                 <button
+//                   type="button"
+//                   disabled={catPage <= 1}
+//                   onClick={() => setCatPage((p) => p - 1)}
+//                   className="rounded p-1 disabled:opacity-30 hover:bg-secondary"
+//                 >
+//                   <ChevronLeft className="h-3.5 w-3.5" />
+//                 </button>
+//                 <span className="text-muted-foreground">{catPage} / {totalPages}</span>
+//                 <button
+//                   type="button"
+//                   disabled={catPage >= totalPages}
+//                   onClick={() => setCatPage((p) => p + 1)}
+//                   className="rounded p-1 disabled:opacity-30 hover:bg-secondary"
+//                 >
+//                   <ChevronRight className="h-3.5 w-3.5" />
+//                 </button>
+//               </div>
+//             )}
+//           </div>
+
+//           {isLoadingCategories ? (
+//             <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+//               {Array.from({ length: 10 }).map((_, i) => (
+//                 <div key={i} className="aspect-square animate-pulse rounded-lg bg-secondary" />
+//               ))}
+//             </div>
+//           ) : (
+//             <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+//               {categories.map((cat:any) => {
+//                 const isSelected = form.category === cat._id;
+//                 return (
+//                   <button
+//                     type="button"
+//                     key={cat._id}
+//                     onClick={() => handleSelectCategory(cat)}
+//                     className={`group relative flex flex-col items-center gap-1 rounded-lg border p-2 text-center transition-colors ${
+//                       isSelected ? "border-brand bg-brand/10" : "border-border hover:bg-secondary"
+//                     }`}
+//                   >
+//                     {isSelected && (
+//                       <span className="absolute right-1 top-1 rounded-full bg-brand p-0.5">
+//                         <Check className="h-2.5 w-2.5 text-white" />
+//                       </span>
+//                     )}
+//                     <div className="aspect-square w-full overflow-hidden rounded-md bg-surface">
+//                       {cat.image && (
+//                         <img src={getImageUrl(cat.image)} 
+//                         // crossOrigin="anonymous"
+//                          alt="category" className="h-full w-full object-cover" />
+//                       )}
+//                     </div>
+//                     <span className="line-clamp-1 text-[11px] capitalize">{cat.name}</span>
+//                   </button>
+//                 );
+//               })}
+//               {categories.length === 0 && (
+//                 <p className="col-span-full py-4 text-center text-xs text-muted-foreground">
+//                   No categories found.
+//                 </p>
+//               )}
+//             </div>
+//           )}
+//         </div>
+
+//         {/* Subcategory picker — depends on selected category */}
+//         {form.category && (
+//           <div>
+//             <span className="mb-2 block text-xs font-medium text-muted-foreground">
+//               Subcategory
+//               {selectedSubCategoryLabel && (
+//                 <span className="ml-1 text-foreground">— {selectedSubCategoryLabel}</span>
+//               )}
+//             </span>
+//             <div className="flex flex-wrap gap-2">
+//               {subCategoryOptions.map((sub:any) => {
+//                 const isSelected = form.subCategory === sub._id;
+//                 return (
+//                   <button
+//                     type="button"
+//                     key={sub._id}
+//                     onClick={() => handleSelectSubCategory(sub)}
+//                     className={`rounded-full border px-3 py-1 text-xs capitalize transition-colors ${
+//                       isSelected ? "border-brand bg-brand text-white" : "border-border hover:bg-secondary"
+//                     }`}
+//                   >
+//                     {sub.name}
+//                   </button>
+//                 );
+//               })}
+//               {subCategoryOptions.length === 0 && (
+//                 <p className="text-xs text-muted-foreground">This category has no subcategories yet.</p>
+//               )}
+//             </div>
+//           </div>
+//         )}
+
+//         <div className="flex justify-end gap-2 border-t border-border pt-4">
+//           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+//           <Button type="submit" variant="premium" disabled={isSaving}>
+//             {isSaving ? "Saving..." : initial ? "Save changes" : "Create product"}
+//           </Button>
+//         </div>
+//       </form>
+//     </Modal>
+//   );
+// }
+
 export function ProductForm({
   initial,
   onClose,
@@ -454,6 +768,14 @@ export function ProductForm({
     inStock: initial?.inStock ?? true,
     category: initial?.category?._id ?? "",
     subCategory: initial?.subCategory?._id ?? "",
+    metaTitle: initial?.metaTitle ?? "",
+    metaDescription: initial?.metaDescription ?? "",
+    productOverview: initial?.productOverview ?? "",
+    benefits: initial?.benefits ?? "",
+    howToUse: initial?.howToUse ?? "",
+    ingredients: initial?.ingredients ?? "",
+    additionalInformation: initial?.additionalInformation ?? "",
+    faqs: initial?.faqs ?? "",
   }));
 
   const [selectedCategoryLabel, setSelectedCategoryLabel] = useState(initial?.category?.name ?? "");
@@ -482,20 +804,30 @@ export function ProductForm({
   const totalPages = categoriesData?.totalPages ?? 1;
 
   const selectedCategory = useMemo(
-    () => categories.find((c:any) => c._id === form.category),
+    () => categories.find((c: any) => c._id === form.category),
     [categories, form.category],
   );
   const subCategoryOptions = selectedCategory?.subCategories ?? [];
 
   const handleSelectCategory = (cat: any) => {
-    setForm((f:any) => ({ ...f, category: cat._id, subCategory: "" }));
+    setForm((f: any) => ({ ...f, category: cat._id, subCategory: "" }));
     setSelectedCategoryLabel(cat.name);
     setSelectedSubCategoryLabel("");
   };
 
   const handleSelectSubCategory = (sub: any) => {
-    setForm((f:any) => ({ ...f, subCategory: sub._id }));
+    setForm((f: any) => ({ ...f, subCategory: sub._id }));
     setSelectedSubCategoryLabel(sub.name);
+  };
+
+  // Adapter so RichEditor's `setContent(prev => ({ name, content }))` pattern
+  // writes directly into a flat form field instead of a separate {name, content} state.
+  const richSetter = (key: string) => (updater: any) => {
+    setForm((f: any) => {
+      const prevShape = { name: key, content: f[key] };
+      const result = typeof updater === "function" ? updater(prevShape) : updater;
+      return { ...f, [key]: result.content };
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -509,6 +841,8 @@ export function ProductForm({
       return toast.error("Discounted price can't exceed price");
     }
     if (!initial && !imageFile) return toast.error("Please upload a product image");
+    if (!form.metaTitle.trim()) return toast.error("Meta title is required");
+    if (!form.metaDescription.trim()) return toast.error("Meta description is required");
 
     const fd = new FormData();
     fd.append("title", form.title.trim());
@@ -520,9 +854,16 @@ export function ProductForm({
     fd.append("rating", String(form.rating));
     fd.append("reviews", String(form.reviews));
     fd.append("inStock", String(form.inStock));
+    fd.append("metaTitle", form.metaTitle.trim());
+    fd.append("metaDescription", form.metaDescription.trim());
+    fd.append("productOverview", form.productOverview);
+    fd.append("benefits", form.benefits);
+    fd.append("howToUse", form.howToUse);
+    fd.append("ingredients", form.ingredients);
+    fd.append("additionalInformation", form.additionalInformation);
+    fd.append("faqs", form.faqs);
     if (imageFile) fd.append("image", imageFile);
 
-    console.log(form.discountedPrice)
     try {
       if (initial) {
         await updateProduct({ id: initial._id, body: fd }).unwrap();
@@ -534,7 +875,7 @@ export function ProductForm({
       onSave?.();
       onClose();
     } catch (err: any) {
-      toast.error(err?.data?.message || err?.data?.errors[0]?.msg || "Something went wrong");
+      toast.error(err?.data?.message || err?.data?.errors?.[0]?.msg || "Something went wrong");
     }
   };
 
@@ -546,9 +887,7 @@ export function ProductForm({
           <div>
             <label className="block text-xs font-medium text-muted-foreground">Image</label>
             <div className="mt-1 aspect-square overflow-hidden rounded-lg border border-border bg-surface">
-              <img src={getImageUrl(imgPreview)}
-              //  crossOrigin="anonymous"
-                alt="" className="h-full w-full object-cover" />
+              <img src={getImageUrl(imgPreview)} alt="" className="h-full w-full object-cover" />
             </div>
             <label className="mt-2 flex cursor-pointer items-center justify-center gap-1 rounded-md border border-dashed border-border py-2 text-xs hover:bg-secondary">
               <Upload className="h-3 w-3" /> Upload
@@ -566,57 +905,55 @@ export function ProductForm({
               label="Title"
               required
               value={form.title}
-              onChange={(v) => setForm((f:any) => ({ ...f, title: v }))}
+              onChange={(v) => setForm((f: any) => ({ ...f, title: v }))}
             />
             <div className="grid gap-2 sm:grid-cols-2">
               <Field
                 label="Price"
                 type="number"
                 value={String(form.price)}
-                onChange={(v) => setForm((f:any) => ({ ...f, price: Number(v) }))}
+                onChange={(v) => setForm((f: any) => ({ ...f, price: Number(v) }))}
               />
               <Field
                 label="Discounted price"
                 type="number"
                 value={form.discountedPrice === "" ? "" : String(form.discountedPrice)}
-                onChange={(v) => setForm((f:any) => ({ ...f, discountedPrice: v === "" ? "" : Number(v) }))}
+                onChange={(v) => setForm((f: any) => ({ ...f, discountedPrice: v === "" ? "" : Number(v) }))}
               />
             </div>
 
-               <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-2 sm:grid-cols-2">
               <Field
                 label="Reviews"
                 type="number"
                 value={String(form.reviews)}
-                onChange={(v) => setForm((f:any) => ({ ...f, reviews: Number(v) }))}
+                onChange={(v) => setForm((f: any) => ({ ...f, reviews: Number(v) }))}
               />
-            <Field
-              label="Rating"
-              type="number"
-              value={String(form.rating)}
-              onChange={(v) => setForm((f:any) => ({ ...f, rating: Number(v) }))}
-            />
+              <Field
+                label="Rating"
+                type="number"
+                value={String(form.rating)}
+                onChange={(v) => setForm((f: any) => ({ ...f, rating: Number(v) }))}
+              />
             </div>
-            <label className="block">
+
+            <div>
               <span className="mb-1 block text-xs font-medium text-muted-foreground">Description</span>
-              <textarea
-                value={form.description}
-                onChange={(e) => setForm((f:any) => ({ ...f, description: e.target.value }))}
-                rows={3}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
-              />
-            </label>
+             <RichEditor content={form.description} setContent={richSetter("description")} height={300} />
+            </div>
+
             <label className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
                 checked={form.inStock}
-                onChange={(e) => setForm((f:any) => ({ ...f, inStock: e.target.checked }))}
+                onChange={(e) => setForm((f: any) => ({ ...f, inStock: e.target.checked }))}
               />
               In stock
             </label>
           </div>
         </div>
 
+        
         {/* Category picker (paginated) */}
         <div className="border-t border-border pt-4">
           <div className="mb-2 flex items-center justify-between">
@@ -655,7 +992,7 @@ export function ProductForm({
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-              {categories.map((cat:any) => {
+              {categories.map((cat: any) => {
                 const isSelected = form.category === cat._id;
                 return (
                   <button
@@ -673,9 +1010,7 @@ export function ProductForm({
                     )}
                     <div className="aspect-square w-full overflow-hidden rounded-md bg-surface">
                       {cat.image && (
-                        <img src={getImageUrl(cat.image)} 
-                        // crossOrigin="anonymous"
-                         alt="category" className="h-full w-full object-cover" />
+                        <img src={getImageUrl(cat.image)} alt="category" className="h-full w-full object-cover" />
                       )}
                     </div>
                     <span className="line-clamp-1 text-[11px] capitalize">{cat.name}</span>
@@ -691,7 +1026,7 @@ export function ProductForm({
           )}
         </div>
 
-        {/* Subcategory picker — depends on selected category */}
+        {/* Subcategory picker */}
         {form.category && (
           <div>
             <span className="mb-2 block text-xs font-medium text-muted-foreground">
@@ -701,7 +1036,7 @@ export function ProductForm({
               )}
             </span>
             <div className="flex flex-wrap gap-2">
-              {subCategoryOptions.map((sub:any) => {
+              {subCategoryOptions.map((sub: any) => {
                 const isSelected = form.subCategory === sub._id;
                 return (
                   <button
@@ -723,6 +1058,68 @@ export function ProductForm({
           </div>
         )}
 
+
+        {/* SEO — required */}
+        <div className="border-t border-border pt-4 space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">SEO</p>
+          <Field
+            label="Meta Title"
+            required
+            value={form.metaTitle}
+            onChange={(v) => setForm((f: any) => ({ ...f, metaTitle: v }))}
+          />
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium text-muted-foreground">
+              Meta Description <span className="text-destructive">*</span>
+            </span>
+            <textarea
+              value={form.metaDescription}
+              onChange={(e) => setForm((f: any) => ({ ...f, metaDescription: e.target.value }))}
+              rows={2}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
+            />
+          </label>
+        </div>
+
+        {/* Extended content — optional, rich text */}
+        <div className="border-t border-border pt-4 space-y-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Product Content <span className="normal-case text-muted-foreground/70">(optional)</span>
+          </p>
+
+          <div className="grid gap-4 sm:grid-cols-1">
+    <div>
+      <span className="mb-1 block text-xs font-medium text-muted-foreground">Product Overview</span>
+      <RichEditor content={form.productOverview} setContent={richSetter("productOverview")} height={300} />
+    </div>
+
+    <div>
+      <span className="mb-1 block text-xs font-medium text-muted-foreground">Benefits</span>
+      <RichEditor content={form.benefits} setContent={richSetter("benefits")} height={300} />
+    </div>
+
+    <div>
+      <span className="mb-1 block text-xs font-medium text-muted-foreground">How To Use</span>
+      <RichEditor content={form.howToUse} setContent={richSetter("howToUse")} height={300} />
+    </div>
+
+    <div>
+      <span className="mb-1 block text-xs font-medium text-muted-foreground">Ingredients</span>
+      <RichEditor content={form.ingredients} setContent={richSetter("ingredients")} height={300} />
+    </div>
+
+    <div>
+      <span className="mb-1 block text-xs font-medium text-muted-foreground">Additional Information</span>
+      <RichEditor content={form.additionalInformation} setContent={richSetter("additionalInformation")} height={300} />
+    </div>
+
+    <div>
+      <span className="mb-1 block text-xs font-medium text-muted-foreground">FAQs</span>
+      <RichEditor content={form.faqs} setContent={richSetter("faqs")} height={300} />
+    </div>
+  </div>
+        </div>
+
         <div className="flex justify-end gap-2 border-t border-border pt-4">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
           <Button type="submit" variant="premium" disabled={isSaving}>
@@ -733,7 +1130,6 @@ export function ProductForm({
     </Modal>
   );
 }
-
 
 function BulkImport({ onClose, onImport }: { onClose: () => void; onImport: (rows: Omit<AdminProduct, "id">[]) => void }) {
   const [preview, setPreview] = useState<ReturnType<typeof validateProductRows> | null>(null);

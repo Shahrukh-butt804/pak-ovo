@@ -1,3 +1,4 @@
+import { Accordion } from "@/components/ui/accordionForTextEditor";
 import { Button } from "@/components/ui/button";
 import { UPLOADS_URL } from "@/constants/api";
 import { formatPrice } from "@/lib/format";
@@ -47,9 +48,9 @@ function ProductPage() {
   const doAdd = async () => {
     const res: any = await addToCart({ productId: product._id, quantity: qty });
     if (res?.data?.success) {
-      toast.success(res.data.message || "Operation successful")
+      toast.success(res.data.message || "Operation successful");
     } else {
-      toast.error(res.error.data.message || "something went wrong")
+      toast.error(res.error.data.message || "something went wrong");
     }
   };
 
@@ -208,7 +209,13 @@ function ProductPage() {
                 <Plus className="h-4 w-4" />
               </button>
             </div>
-            <Button disabled={isAddingToCart} variant="hero" size="lg" className="flex-1" onClick={doAdd}>
+            <Button
+              disabled={isAddingToCart}
+              variant="hero"
+              size="lg"
+              className="flex-1"
+              onClick={doAdd}
+            >
               <ShoppingBag className="h-4 w-4" /> Add to bag
             </Button>
             <Button
@@ -289,6 +296,35 @@ function ProductPage() {
                 ))}
               </div>
             </details> */}
+
+            <Accordion
+              sections={[
+                {
+                  title: "Product Overview",
+                  content: product.productOverview,
+                },
+                {
+                  title: "Benefits",
+                  content: product.benefits,
+                },
+                {
+                  title: "How To Use",
+                  content: product.howToUse,
+                },
+                {
+                  title: "Ingredients",
+                  content: product.ingredients,
+                },
+                {
+                  title: "Additional Product Information",
+                  content: product.additionalInformation,
+                },
+                {
+                  title: "FAQs",
+                  content: product.faqs,
+                },
+               ]}
+            />
           </div>
         </div>
       </section>
@@ -328,6 +364,15 @@ type ProductApiResponse = {
   badge?: string;
   compareAt?: number;
   subcategory?: string;
+  metaTitle?: string;
+  metaDescription?: string;
+  productOverview?: string;
+  benefits?: string;
+  howToUse?: string;
+  ingredients?: string;
+  additionalInformation?: string;
+  faqs?: string;
+
 };
 
 function normalizeProduct(product?: ProductApiResponse) {
@@ -347,12 +392,19 @@ function normalizeProduct(product?: ProductApiResponse) {
       subcategory: "General",
       badge: undefined,
       inStock: true,
+      metaTitle: "",
+      metaDescription: "",
+      productOverview: "",
+      benefits: "",
+      howToUse: "",
+      ingredients: "",
+      additionalInformation: "",
+      faqs: ""
     };
   }
 
   const price = Number(product.discountedPrice ?? product.price ?? 0);
   const compareAt = product.price && product.discountedPrice ? Number(product.price) : undefined;
-
   return {
     _id: product._id ?? "",
     slug: product.slug ?? "",
@@ -368,5 +420,14 @@ function normalizeProduct(product?: ProductApiResponse) {
     subcategory: product.subcategory ?? product.category?.name ?? "General",
     badge: product.badge,
     inStock: product.inStock ?? true,
+    metaTitle: product.metaTitle ?? "",
+    metaDescription: product.metaDescription ?? "",
+    productOverview: product.productOverview ?? "",
+    benefits: product.benefits ?? "",
+    howToUse: product.howToUse ?? "",
+    ingredients: product.ingredients ?? "",
+    additionalInformation: product.additionalInformation ?? "",
+    faqs: product.faqs ?? ""
+
   };
 }
