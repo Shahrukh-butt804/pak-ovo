@@ -39,6 +39,7 @@ import {
 import {
   useAssignManagerRoutesMutation,
   useGetAllUsersQuery,
+  useGetReportQuery,
   useToggleUserStatusMutation,
   useUpdateUserRoleMutation,
 } from "@/redux/services/userManagement";
@@ -279,23 +280,29 @@ function NavList({ view, setView }: { view: View; setView: (v: View) => void }) 
 
 /* ---------- Dashboard ---------- */
 function Dashboard() {
-  const { products, orders, customers } = useAdmin();
-  const revenue = orders
-    .filter((o) => o.status !== "Refunded" && o.status !== "Cancelled")
-    .reduce((s, o) => s + o.total, 0);
-  const pending = orders.filter((o) => o.status === "Pending").length;
+  const { data, isLoading } = useGetReportQuery({});
+
+  const revenue = data?.revenue || 0;
+  const totalOrders = data?.totalOrders || 0;
+  const customers = data?.customers || 0;
+  const totalProducts = data?.totalProducts || 0;
+  const recentOrders = data?.recentOrders || [];
+
+  if (isLoading) {
+    return <div className="p-6 text-sm text-muted-foreground">Loading dashboard...</div>;
+  }
 
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Metric label="Revenue" value={formatPrice(revenue)} delta="+12.4%" />
-        <Metric label="Orders" value={orders.length.toString()} delta="+8.1%" />
-        <Metric label="Customers" value={customers.length.toString()} delta="+5.2%" />
-        <Metric label="SKUs" value={products.length.toString()} delta={`${pending} pending`} />
+        <Metric label="Revenue" value={formatPrice(revenue)} />
+        <Metric label="Orders" value={totalOrders.toString()} />
+        <Metric label="Customers" value={customers.toString()} />
+        <Metric label="total Products" value={totalProducts.toString()} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="rounded-2xl border border-border bg-card p-6 lg:col-span-2">
+        <div className="rounded-2xl border border-border bg-card p-6 lg:col-span-3">
           <h2 className="font-display text-lg font-semibold">Recent orders</h2>
           <div className="mt-4 overflow-x-auto rounded-lg border border-border">
             <table className="w-full min-w-120 text-sm">
@@ -308,37 +315,27 @@ function Dashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {orders.slice(0, 6).map((o) => (
-                  <tr key={o.id}>
-                    <td className="p-3 font-medium">{o.id}</td>
-                    <td className="p-3 text-muted-foreground">{o.customer}</td>
-                    <td className="p-3">{formatPrice(o.total)}</td>
-                    <td className="p-3">
-                      <StatusBadge status={o.status} />
+                {recentOrders.length > 0 ? (
+                  recentOrders.map((o: any, i: number) => (
+                    <tr key={o.orderId || i}>
+                      <td className="p-3 font-medium">{o.orderId}</td>
+                      <td className="p-3 text-muted-foreground">{o.customer}</td>
+                      <td className="p-3">{formatPrice(o.total)}</td>
+                      <td className="p-3">
+                        <StatusBadge status={o.status} />
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={4} className="p-6 text-center text-muted-foreground">
+                      No recent orders
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
-        </div>
-
-        <div className="rounded-2xl border border-border bg-card p-6">
-          <h2 className="font-display text-lg font-semibold">Top products</h2>
-          <ul className="mt-4 space-y-3">
-            {products.slice(0, 5).map((p) => (
-              <li key={p.id} className="flex items-center gap-3">
-                <img src={p.image} alt="" className="h-10 w-10 rounded-md object-cover" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{p.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {p.reviews} sold · {p.stock} in stock
-                  </p>
-                </div>
-                <p className="text-sm font-semibold">{formatPrice(p.price)}</p>
-              </li>
-            ))}
-          </ul>
         </div>
       </div>
     </>
@@ -1517,7 +1514,7 @@ function RoutesView() {
   // ---------- Managers + route assignment (table) ----------
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 10,
+    limit: 30,
     keyword: "",
     role: "manager",
   });
@@ -2057,14 +2054,14 @@ function Metric({ label, value, delta }: { label: string; value: string; delta?:
   );
 }
 
-function StatusBadge({ status }: { status: AdminOrder["status"] }) {
-  const map: Record<AdminOrder["status"], string> = {
-    Pending: "bg-gold/15 text-gold-foreground",
-    Paid: "bg-brand/10 text-brand",
-    Fulfilled: "bg-brand/10 text-brand",
-    Delivered: "bg-brand/15 text-brand",
-    Refunded: "bg-destructive/10 text-destructive",
-    Cancelled: "bg-secondary text-muted-foreground",
+function StatusBadge({ status }: any) {
+  const map:any = {
+    pending: "bg-gold/15 text-gold-foreground",
+    confirmed: "bg-brand/10 text-brand",
+    dispatched: "bg-brand/10 text-brand",
+    delivered: "bg-brand/15 text-brand",
+    refunded: "bg-destructive/10 text-destructive",
+    cancelled: "bg-secondary text-muted-foreground",
   };
   return (
     <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", map[status])}>
@@ -2118,7 +2115,7 @@ function Modal({
   children: React.ReactNode;
 }) {
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-70 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <div className="relative z-10 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-background p-6 shadow-2xl">
         <div className="mb-4 flex items-center justify-between">
