@@ -10,22 +10,44 @@ import {
   useAdmin,
   validateProductRows,
   type AdminOrder,
-  type AdminProduct
+  type AdminProduct,
 } from "@/lib/admin-store";
 import { formatPrice } from "@/lib/format";
 import { createFileRoute, Link, useNavigate } from "@/lib/router-compat";
 import { cn } from "@/lib/utils";
 import { logout, selectUser, setUser } from "@/redux/reducers/userSlice";
 import { useLoginMutation } from "@/redux/services/authSlice";
-import { useAddToCategoryMutation, useDeleteCategoryMutation, useGetAllCategoriesWithSubCategoriesQuery, useUpdateCategoryMutation } from "@/redux/services/categorySlice";
+import {
+  useAddToCategoryMutation,
+  useDeleteCategoryMutation,
+  useGetAllCategoriesWithSubCategoriesQuery,
+  useUpdateCategoryMutation,
+} from "@/redux/services/categorySlice";
 import { useGetAllOrdersQuery, useUpdateOrderStatusMutation } from "@/redux/services/orderSlice";
-import { useAddProductMutation, useDeleteProductMutation, useGetAllProductsQuery, useUpdateProductMutation } from "@/redux/services/productSlice";
-import { useAddRoutesMutation, useDeleteRoutesMutation, useGetAllRoutessQuery, useUpdateRoutesMutation } from "@/redux/services/routeSlice";
-import { useAssignManagerRoutesMutation, useGetAllUsersQuery, useToggleUserStatusMutation } from "@/redux/services/userManagement";
+import {
+  useAddProductMutation,
+  useDeleteProductMutation,
+  useGetAllProductsQuery,
+  useUpdateProductMutation,
+} from "@/redux/services/productSlice";
+import {
+  useAddRoutesMutation,
+  useDeleteRoutesMutation,
+  useGetAllRoutessQuery,
+  useUpdateRoutesMutation,
+} from "@/redux/services/routeSlice";
+import {
+  useAssignManagerRoutesMutation,
+  useGetAllUsersQuery,
+  useToggleUserStatusMutation,
+  useUpdateUserRoleMutation,
+} from "@/redux/services/userManagement";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import {
-  Check, ChevronLeft, ChevronRight,
+  Check,
+  ChevronLeft,
+  ChevronRight,
   Download,
   FileDown,
   LayoutDashboard,
@@ -39,7 +61,7 @@ import {
   Trash2,
   Upload,
   Users,
-  X
+  X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -51,7 +73,7 @@ export const Route = createFileRoute("/admin")({
 });
 
 function AdminGate() {
-  const user = useSelector(selectUser)
+  const user = useSelector(selectUser);
   if (!user || (user.role !== "admin" && user.role !== "manager")) return <AdminLogin />;
   return <Admin />;
 }
@@ -62,8 +84,6 @@ function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [login, { isLoading }] = useLoginMutation();
-
-  
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,10 +105,14 @@ function AdminLogin() {
       <div className="w-full rounded-2xl border border-border bg-card p-8 shadow-sm">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">Admin portal</p>
         <h1 className="mt-1 font-display text-2xl font-bold">Sign in to continue</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Authorized staff only. Unauthorized access is prohibited.</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Authorized staff only. Unauthorized access is prohibited.
+        </p>
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
           <div>
-            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Email</label>
+            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Email
+            </label>
             <input
               type="email"
               required
@@ -99,7 +123,9 @@ function AdminLogin() {
             />
           </div>
           <div>
-            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Password</label>
+            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Password
+            </label>
             <input
               type="password"
               required
@@ -109,8 +135,9 @@ function AdminLogin() {
               className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
             />
           </div>
-          <Button disabled={isLoading} type="submit" variant="hero" size="lg" className="w-full">Sign in</Button>
-      
+          <Button disabled={isLoading} type="submit" variant="hero" size="lg" className="w-full">
+            Sign in
+          </Button>
         </form>
       </div>
     </div>
@@ -132,15 +159,12 @@ function getNavItems(): { key: View; icon: any; label: string }[] {
 
   // Admins see everything, plus the admin-only Routes management page
   if (user.role === "admin") {
-    return [
-      ...allProtectedRoutes,
-      { key: "routes", icon: MapPin, label: "Routes" },
-    ];
+    return [...allProtectedRoutes, { key: "routes", icon: MapPin, label: "Routes" }];
   }
 
   // Non-admins (managers) only see routes explicitly assigned to them
   const assignedRouteNames = (user.assignedRoutes || []).map((r: any) =>
-    typeof r === "string" ? r : r.name
+    typeof r === "string" ? r : r.name,
   );
 
   return allProtectedRoutes.filter((item) => assignedRouteNames.includes(item.key));
@@ -150,14 +174,18 @@ function Admin() {
   const dispatch = useDispatch();
   const [view, setView] = useState<View>("dashboard");
   const [mobileNav, setMobileNav] = useState(false);
-  const user = useSelector(selectUser)
+  const user = useSelector(selectUser);
 
   return (
     <div className="container-px mx-auto max-w-7xl py-8">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">Admin portal</p>
-          <h1 className="mt-1 font-display text-2xl font-bold md:text-3xl">PakOvo control center</h1>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">
+            Admin portal
+          </p>
+          <h1 className="mt-1 font-display text-2xl font-bold md:text-3xl">
+            PakOvo control center
+          </h1>
         </div>
         <div className="flex items-center gap-3">
           {user && (
@@ -165,8 +193,18 @@ function Admin() {
               {user.name} · <span className="uppercase tracking-wider text-brand">{user.role}</span>
             </span>
           )}
-          <button onClick={() => setMobileNav(true)} className="lg:hidden rounded-md border border-border px-3 py-2 text-sm">Menu</button>
-          <Link to="/" className="hidden text-sm text-muted-foreground hover:text-foreground sm:inline">← Back to site</Link>
+          <button
+            onClick={() => setMobileNav(true)}
+            className="lg:hidden rounded-md border border-border px-3 py-2 text-sm"
+          >
+            Menu
+          </button>
+          <Link
+            to="/"
+            className="hidden text-sm text-muted-foreground hover:text-foreground sm:inline"
+          >
+            ← Back to site
+          </Link>
           <button
             onClick={() => {
               dispatch(logout());
@@ -189,9 +227,17 @@ function Admin() {
             <div className="absolute left-0 top-0 h-full w-72 overflow-y-auto bg-background p-4">
               <div className="mb-4 flex items-center justify-between">
                 <p className="font-display font-bold">Admin</p>
-                <button onClick={() => setMobileNav(false)} className="p-1.5"><X className="h-5 w-5" /></button>
+                <button onClick={() => setMobileNav(false)} className="p-1.5">
+                  <X className="h-5 w-5" />
+                </button>
               </div>
-              <NavList view={view} setView={(v) => { setView(v); setMobileNav(false); }} />
+              <NavList
+                view={view}
+                setView={(v) => {
+                  setView(v);
+                  setMobileNav(false);
+                }}
+              />
             </div>
           </div>
         )}
@@ -218,7 +264,9 @@ function NavList({ view, setView }: { view: View; setView: (v: View) => void }) 
             onClick={() => setView(key)}
             className={cn(
               "flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
-              view === key ? "bg-secondary font-semibold" : "text-muted-foreground hover:bg-secondary",
+              view === key
+                ? "bg-secondary font-semibold"
+                : "text-muted-foreground hover:bg-secondary",
             )}
           >
             <Icon className="h-4 w-4" /> {label}
@@ -232,7 +280,9 @@ function NavList({ view, setView }: { view: View; setView: (v: View) => void }) 
 /* ---------- Dashboard ---------- */
 function Dashboard() {
   const { products, orders, customers } = useAdmin();
-  const revenue = orders.filter((o) => o.status !== "Refunded" && o.status !== "Cancelled").reduce((s, o) => s + o.total, 0);
+  const revenue = orders
+    .filter((o) => o.status !== "Refunded" && o.status !== "Cancelled")
+    .reduce((s, o) => s + o.total, 0);
   const pending = orders.filter((o) => o.status === "Pending").length;
 
   return (
@@ -250,7 +300,12 @@ function Dashboard() {
           <div className="mt-4 overflow-x-auto rounded-lg border border-border">
             <table className="w-full min-w-120 text-sm">
               <thead className="bg-surface text-left text-xs uppercase tracking-wider text-muted-foreground">
-                <tr><th className="p-3">Order</th><th className="p-3">Customer</th><th className="p-3">Total</th><th className="p-3">Status</th></tr>
+                <tr>
+                  <th className="p-3">Order</th>
+                  <th className="p-3">Customer</th>
+                  <th className="p-3">Total</th>
+                  <th className="p-3">Status</th>
+                </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {orders.slice(0, 6).map((o) => (
@@ -258,7 +313,9 @@ function Dashboard() {
                     <td className="p-3 font-medium">{o.id}</td>
                     <td className="p-3 text-muted-foreground">{o.customer}</td>
                     <td className="p-3">{formatPrice(o.total)}</td>
-                    <td className="p-3"><StatusBadge status={o.status} /></td>
+                    <td className="p-3">
+                      <StatusBadge status={o.status} />
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -274,7 +331,9 @@ function Dashboard() {
                 <img src={p.image} alt="" className="h-10 w-10 rounded-md object-cover" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{p.name}</p>
-                  <p className="text-xs text-muted-foreground">{p.reviews} sold · {p.stock} in stock</p>
+                  <p className="text-xs text-muted-foreground">
+                    {p.reviews} sold · {p.stock} in stock
+                  </p>
                 </div>
                 <p className="text-sm font-semibold">{formatPrice(p.price)}</p>
               </li>
@@ -294,49 +353,75 @@ function ProductsView() {
   const [importOpen, setImportOpen] = useState(false);
   const [deletingItemId, setDeletingItemId] = useState("");
 
-    const [pagination, setPagination] = useState({
-        page: 1,
-        limit: 10,
-        keyword: ""
-    })
-    const { data, isLoading, refetch } = useGetAllProductsQuery({ ...pagination }, { refetchOnMountOrArgChange: true})
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    keyword: "",
+  });
+  const { data, isLoading, refetch } = useGetAllProductsQuery(
+    { ...pagination },
+    { refetchOnMountOrArgChange: true },
+  );
 
-    const [deleteProduct ,{ isLoading : isDeleting}] = useDeleteProductMutation()
-
+  const [deleteProduct, { isLoading: isDeleting }] = useDeleteProductMutation();
 
   const exportCsv = () => {
-    const headers = ["id", "name", "category", "subcategory", "price", "compareAt", "stock", "rating", "reviews", "active"];
+    const headers = [
+      "id",
+      "name",
+      "category",
+      "subcategory",
+      "price",
+      "compareAt",
+      "stock",
+      "rating",
+      "reviews",
+      "active",
+    ];
     const rows = products.map((p) =>
-      [p.id, p.name, p.category, p.subcategory, p.price, p.compareAt ?? "", p.stock, p.rating, p.reviews, p.active]
-        .map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","),
+      [
+        p.id,
+        p.name,
+        p.category,
+        p.subcategory,
+        p.price,
+        p.compareAt ?? "",
+        p.stock,
+        p.rating,
+        p.reviews,
+        p.active,
+      ]
+        .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+        .join(","),
     );
     download("products.csv", "text/csv", [headers.join(","), ...rows].join("\n"));
     toast.success(`Exported ${products.length} products to CSV`);
   };
 
-
-  const handleDelete = async (productId:any) => {
-    if(!productId){
+  const handleDelete = async (productId: any) => {
+    if (!productId) {
       toast.error("Product Id is Required");
-      return
+      return;
     }
-    setDeletingItemId(productId)
+    setDeletingItemId(productId);
     const res: any = await deleteProduct(productId);
     if (res?.data?.success) {
       toast.success(res?.data?.message || "Operation successful");
-      refetch()
+      refetch();
     } else {
-      toast.error( res?.error?.data?.message || res?.error?.data?.errors[0].msg || "something went wrong",);
+      toast.error(
+        res?.error?.data?.message || res?.error?.data?.errors[0].msg || "something went wrong",
+      );
     }
-    setDeletingItemId("")
+    setDeletingItemId("");
   };
 
   if (isLoading) {
-      return (
-          <div className='grid place-content-center'>
-              <Spinner size='lg' />
-          </div>
-      )
+    return (
+      <div className="grid place-content-center">
+        <Spinner size="lg" />
+      </div>
+    );
   }
 
   return (
@@ -346,35 +431,70 @@ function ProductsView() {
         count={`Total ${data.totalDocs || "N/A"} Products`}
         actions={
           <>
-            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}><Upload className="h-4 w-4" /> Bulk CSV import</Button>
-            <Button variant="outline" size="sm" onClick={exportCsv}><Download className="h-4 w-4" /> Export CSV</Button>
-            <Button variant="premium" size="sm" onClick={() => setCreating(true)}><Plus className="h-4 w-4" /> New product</Button>
+            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+              <Upload className="h-4 w-4" /> Bulk CSV import
+            </Button>
+            <Button variant="outline" size="sm" onClick={exportCsv}>
+              <Download className="h-4 w-4" /> Export CSV
+            </Button>
+            <Button variant="premium" size="sm" onClick={() => setCreating(true)}>
+              <Plus className="h-4 w-4" /> New product
+            </Button>
           </>
         }
       />
 
       <div className="overflow-x-auto rounded-2xl border border-border bg-card">
-         <Table
-                tableData={{ 
-                  data: data.docs,
-                  exlucdedFields: ["__v", "updatedAt", "_id", "slug", "image", "description", "wished","reviews","rating" , "metaTitle","metaDescription","productOverview","benefits","howToUse","ingredients","additionalInformation","faqs"] }}
-                setPagination={setPagination}
-                pagination={data || {}}
-                onEdit={setEditing}
-                onDelete={handleDelete}
-                isDeleting={isDeleting}
-                deletingItemId={deletingItemId}
-            />
+        <Table
+          tableData={{
+            data: data.docs,
+            exlucdedFields: [
+              "__v",
+              "updatedAt",
+              "_id",
+              "slug",
+              "image",
+              "description",
+              "wished",
+              "reviews",
+              "rating",
+              "metaTitle",
+              "metaDescription",
+              "productOverview",
+              "benefits",
+              "howToUse",
+              "ingredients",
+              "additionalInformation",
+              "faqs",
+            ],
+          }}
+          setPagination={setPagination}
+          pagination={data || {}}
+          onEdit={setEditing}
+          onDelete={handleDelete}
+          isDeleting={isDeleting}
+          deletingItemId={deletingItemId}
+        />
       </div>
 
       {(creating || editing) && (
         <ProductForm
           initial={editing}
-          onClose={() => { setCreating(false); setEditing(null) }}
-          onSave={(data:any) => {
-            if (editing) { updateProduct(editing.id, data); toast.success("Product updated"); }
-            else { addProduct(data); toast.success("Product created"); }
-            setCreating(false); setEditing(null); refetch()
+          onClose={() => {
+            setCreating(false);
+            setEditing(null);
+          }}
+          onSave={(data: any) => {
+            if (editing) {
+              updateProduct(editing.id, data);
+              toast.success("Product updated");
+            } else {
+              addProduct(data);
+              toast.success("Product created");
+            }
+            setCreating(false);
+            setEditing(null);
+            refetch();
           }}
         />
       )}
@@ -441,7 +561,9 @@ export function ProductForm({
   }));
 
   const [selectedCategoryLabel, setSelectedCategoryLabel] = useState(initial?.category?.name ?? "");
-  const [selectedSubCategoryLabel, setSelectedSubCategoryLabel] = useState(initial?.subCategory?.name ?? "");
+  const [selectedSubCategoryLabel, setSelectedSubCategoryLabel] = useState(
+    initial?.subCategory?.name ?? "",
+  );
 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imgPreview, setImgPreview] = useState<string>(getImageUrl(initial?.image));
@@ -580,7 +702,9 @@ export function ProductForm({
                 label="Discounted price"
                 type="number"
                 value={form.discountedPrice === "" ? "" : String(form.discountedPrice)}
-                onChange={(v) => setForm((f: any) => ({ ...f, discountedPrice: v === "" ? "" : Number(v) }))}
+                onChange={(v) =>
+                  setForm((f: any) => ({ ...f, discountedPrice: v === "" ? "" : Number(v) }))
+                }
               />
             </div>
 
@@ -600,8 +724,14 @@ export function ProductForm({
             </div>
 
             <div>
-              <span className="mb-1 block text-xs font-medium text-muted-foreground">Description</span>
-             <RichEditor content={form.description} setContent={richSetter("description")} height={300} />
+              <span className="mb-1 block text-xs font-medium text-muted-foreground">
+                Description
+              </span>
+              <RichEditor
+                content={form.description}
+                setContent={richSetter("description")}
+                height={300}
+              />
             </div>
 
             <label className="flex items-center gap-2 text-sm">
@@ -615,13 +745,14 @@ export function ProductForm({
           </div>
         </div>
 
-        
         {/* Category picker (paginated) */}
         <div className="border-t border-border pt-4">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-xs font-medium text-muted-foreground">
               Category
-              {selectedCategoryLabel && <span className="ml-1 text-foreground">— {selectedCategoryLabel}</span>}
+              {selectedCategoryLabel && (
+                <span className="ml-1 text-foreground">— {selectedCategoryLabel}</span>
+              )}
             </span>
             {totalPages > 1 && (
               <div className="flex items-center gap-1 text-xs">
@@ -633,7 +764,9 @@ export function ProductForm({
                 >
                   <ChevronLeft className="h-3.5 w-3.5" />
                 </button>
-                <span className="text-muted-foreground">{catPage} / {totalPages}</span>
+                <span className="text-muted-foreground">
+                  {catPage} / {totalPages}
+                </span>
                 <button
                   type="button"
                   disabled={catPage >= totalPages}
@@ -672,7 +805,11 @@ export function ProductForm({
                     )}
                     <div className="aspect-square w-full overflow-hidden rounded-md bg-surface">
                       {cat.image && (
-                        <img src={getImageUrl(cat.image)} alt="category" className="h-full w-full object-cover" />
+                        <img
+                          src={getImageUrl(cat.image)}
+                          alt="category"
+                          className="h-full w-full object-cover"
+                        />
                       )}
                     </div>
                     <span className="line-clamp-1 text-[11px] capitalize">{cat.name}</span>
@@ -706,7 +843,9 @@ export function ProductForm({
                     key={sub._id}
                     onClick={() => handleSelectSubCategory(sub)}
                     className={`rounded-full border px-3 py-1 text-xs capitalize transition-colors ${
-                      isSelected ? "border-brand bg-brand text-white" : "border-border hover:bg-secondary"
+                      isSelected
+                        ? "border-brand bg-brand text-white"
+                        : "border-border hover:bg-secondary"
                     }`}
                   >
                     {sub.name}
@@ -714,16 +853,19 @@ export function ProductForm({
                 );
               })}
               {subCategoryOptions.length === 0 && (
-                <p className="text-xs text-muted-foreground">This category has no subcategories yet.</p>
+                <p className="text-xs text-muted-foreground">
+                  This category has no subcategories yet.
+                </p>
               )}
             </div>
           </div>
         )}
 
-
         {/* SEO — required */}
         <div className="border-t border-border pt-4 space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">SEO</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            SEO
+          </p>
           <Field
             label="Meta Title"
             required
@@ -750,40 +892,70 @@ export function ProductForm({
           </p>
 
           <div className="grid gap-4 sm:grid-cols-1">
-    <div>
-      <span className="mb-1 block text-xs font-medium text-muted-foreground">Product Overview</span>
-      <RichEditor content={form.productOverview} setContent={richSetter("productOverview")} height={300} />
-    </div>
+            <div>
+              <span className="mb-1 block text-xs font-medium text-muted-foreground">
+                Product Overview
+              </span>
+              <RichEditor
+                content={form.productOverview}
+                setContent={richSetter("productOverview")}
+                height={300}
+              />
+            </div>
 
-    <div>
-      <span className="mb-1 block text-xs font-medium text-muted-foreground">Benefits</span>
-      <RichEditor content={form.benefits} setContent={richSetter("benefits")} height={300} />
-    </div>
+            <div>
+              <span className="mb-1 block text-xs font-medium text-muted-foreground">Benefits</span>
+              <RichEditor
+                content={form.benefits}
+                setContent={richSetter("benefits")}
+                height={300}
+              />
+            </div>
 
-    <div>
-      <span className="mb-1 block text-xs font-medium text-muted-foreground">How To Use</span>
-      <RichEditor content={form.howToUse} setContent={richSetter("howToUse")} height={300} />
-    </div>
+            <div>
+              <span className="mb-1 block text-xs font-medium text-muted-foreground">
+                How To Use
+              </span>
+              <RichEditor
+                content={form.howToUse}
+                setContent={richSetter("howToUse")}
+                height={300}
+              />
+            </div>
 
-    <div>
-      <span className="mb-1 block text-xs font-medium text-muted-foreground">Ingredients</span>
-      <RichEditor content={form.ingredients} setContent={richSetter("ingredients")} height={300} />
-    </div>
+            <div>
+              <span className="mb-1 block text-xs font-medium text-muted-foreground">
+                Ingredients
+              </span>
+              <RichEditor
+                content={form.ingredients}
+                setContent={richSetter("ingredients")}
+                height={300}
+              />
+            </div>
 
-    <div>
-      <span className="mb-1 block text-xs font-medium text-muted-foreground">Additional Information</span>
-      <RichEditor content={form.additionalInformation} setContent={richSetter("additionalInformation")} height={300} />
-    </div>
+            <div>
+              <span className="mb-1 block text-xs font-medium text-muted-foreground">
+                Additional Information
+              </span>
+              <RichEditor
+                content={form.additionalInformation}
+                setContent={richSetter("additionalInformation")}
+                height={300}
+              />
+            </div>
 
-    <div>
-      <span className="mb-1 block text-xs font-medium text-muted-foreground">FAQs</span>
-      <RichEditor content={form.faqs} setContent={richSetter("faqs")} height={300} />
-    </div>
-  </div>
+            <div>
+              <span className="mb-1 block text-xs font-medium text-muted-foreground">FAQs</span>
+              <RichEditor content={form.faqs} setContent={richSetter("faqs")} height={300} />
+            </div>
+          </div>
         </div>
 
         <div className="flex justify-end gap-2 border-t border-border pt-4">
-          <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
           <Button type="submit" variant="premium" disabled={isSaving}>
             {isSaving ? "Saving..." : initial ? "Save changes" : "Create product"}
           </Button>
@@ -793,14 +965,23 @@ export function ProductForm({
   );
 }
 
-function BulkImport({ onClose, onImport }: { onClose: () => void; onImport: (rows: Omit<AdminProduct, "id">[]) => void }) {
+function BulkImport({
+  onClose,
+  onImport,
+}: {
+  onClose: () => void;
+  onImport: (rows: Omit<AdminProduct, "id">[]) => void;
+}) {
   const [preview, setPreview] = useState<ReturnType<typeof validateProductRows> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = async (file: File) => {
     const text = await file.text();
     const rows = parseCsv(text);
-    if (rows.length === 0) { toast.error("CSV appears empty"); return; }
+    if (rows.length === 0) {
+      toast.error("CSV appears empty");
+      return;
+    }
     setPreview(validateProductRows(rows, catFallback));
   };
 
@@ -812,7 +993,8 @@ function BulkImport({ onClose, onImport }: { onClose: () => void; onImport: (row
           <p className="mt-1 text-xs text-muted-foreground">
             Required columns: <code className="rounded bg-background px-1">name</code>,{" "}
             <code className="rounded bg-background px-1">category</code>,{" "}
-            <code className="rounded bg-background px-1">price</code>. Optional: subcategory, compareAt, stock, rating, reviews, description, image.
+            <code className="rounded bg-background px-1">price</code>. Optional: subcategory,
+            compareAt, stock, rating, reviews, description, image.
           </p>
           <button
             type="button"
@@ -832,7 +1014,10 @@ function BulkImport({ onClose, onImport }: { onClose: () => void; onImport: (row
             type="file"
             accept=".csv,text/csv"
             className="hidden"
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleFile(f);
+            }}
           />
         </label>
 
@@ -840,21 +1025,39 @@ function BulkImport({ onClose, onImport }: { onClose: () => void; onImport: (row
           <div className="space-y-3">
             <div className="grid grid-cols-3 gap-2 text-center">
               <Stat label="Valid" value={String(preview.valid.length)} tone="ok" />
-              <Stat label="Errors" value={String(preview.errors.length)} tone={preview.errors.length ? "err" : "ok"} />
-              <Stat label="Warnings" value={String(preview.warnings.length)} tone={preview.warnings.length ? "warn" : "ok"} />
+              <Stat
+                label="Errors"
+                value={String(preview.errors.length)}
+                tone={preview.errors.length ? "err" : "ok"}
+              />
+              <Stat
+                label="Warnings"
+                value={String(preview.warnings.length)}
+                tone={preview.warnings.length ? "warn" : "ok"}
+              />
             </div>
             {preview.errors.length > 0 && (
               <div className="max-h-32 overflow-y-auto rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs">
-                {preview.errors.slice(0, 20).map((e, i) => <p key={i} className="text-destructive">{e}</p>)}
+                {preview.errors.slice(0, 20).map((e, i) => (
+                  <p key={i} className="text-destructive">
+                    {e}
+                  </p>
+                ))}
               </div>
             )}
             {preview.warnings.length > 0 && (
               <div className="max-h-24 overflow-y-auto rounded-md border border-border bg-surface p-3 text-xs">
-                {preview.warnings.slice(0, 20).map((w, i) => <p key={i} className="text-muted-foreground">{w}</p>)}
+                {preview.warnings.slice(0, 20).map((w, i) => (
+                  <p key={i} className="text-muted-foreground">
+                    {w}
+                  </p>
+                ))}
               </div>
             )}
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
               <Button
                 type="button"
                 variant="premium"
@@ -878,8 +1081,8 @@ function mapOrder(o: any) {
     id: o._id ?? o.id,
     customer: `${o.shippingAddress?.firstName ?? ""} ${o.shippingAddress?.lastName ?? ""}`.trim(),
     email: o.user?.email ?? o.email ?? "—",
-    date: o.createdAt ? new Date(o.createdAt).toLocaleDateString() : o.date ?? "—",
-    items: Array.isArray(o.products) ? o.products.length : o.products ?? 0,
+    date: o.createdAt ? new Date(o.createdAt).toLocaleDateString() : (o.date ?? "—"),
+    items: Array.isArray(o.products) ? o.products.length : (o.products ?? 0),
     total: o.totalAmount ?? o.totalAmount ?? 0,
     status: o.status,
   };
@@ -914,7 +1117,9 @@ export function OrdersView() {
     ...(status ? { status } : {}),
   };
 
-  const { data, isLoading, isFetching, refetch } = useGetAllOrdersQuery(queryArgs, {refetchOnMountOrArgChange: true});
+  const { data, isLoading, isFetching, refetch } = useGetAllOrdersQuery(queryArgs, {
+    refetchOnMountOrArgChange: true,
+  });
   const [updateOrder, { isLoading: isUpdatingStatus }] = useUpdateOrderStatusMutation();
 
   const orders = useMemo(() => (data?.docs ?? []).map(mapOrder), [data]);
@@ -923,7 +1128,7 @@ export function OrdersView() {
 
   const handleStatusChange = async (orderId: string, newStatus: string) => {
     try {
-      await updateOrder({ id: orderId, body: {status:newStatus} }).unwrap();
+      await updateOrder({ id: orderId, body: { status: newStatus } }).unwrap();
       toast.success(`Order ${orderId} → ${newStatus}`);
       refetch();
     } catch (err: any) {
@@ -940,7 +1145,15 @@ export function OrdersView() {
     autoTable(doc, {
       startY: 28,
       head: [["Order", "Customer", "Email", "Date", "Items", "Total", "Status"]],
-      body: orders.map((o:any) => [o.id, o.customer, o.email, o.date, o.items, formatPrice(o.total), o.status]),
+      body: orders.map((o: any) => [
+        o.id,
+        o.customer,
+        o.email,
+        o.date,
+        o.items,
+        formatPrice(o.total),
+        o.status,
+      ]),
       styles: { fontSize: 9 },
       headStyles: { fillColor: [15, 27, 61] },
     });
@@ -963,7 +1176,9 @@ export function OrdersView() {
             >
               <option value="">All statuses</option>
               {STATUS_OPTIONS.map((s) => (
-                <option key={s} value={s}>{s}</option>
+                <option key={s} value={s}>
+                  {s}
+                </option>
               ))}
             </select>
             <Button variant="outline" size="sm" onClick={exportPdf}>
@@ -994,7 +1209,7 @@ export function OrdersView() {
                 </td>
               </tr>
             ) : (
-              orders.map((o:any) => (
+              orders.map((o: any) => (
                 <tr key={o.id}>
                   <td className="p-3 font-medium">{o.id}</td>
                   <td className="p-3 text-muted-foreground">{o.customer}</td>
@@ -1009,7 +1224,9 @@ export function OrdersView() {
                       className="h-7 rounded-md border border-input bg-background px-2 text-xs disabled:opacity-50"
                     >
                       {STATUS_OPTIONS.map((s) => (
-                        <option key={s} value={s}>{s}</option>
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
                       ))}
                     </select>
                   </td>
@@ -1077,88 +1294,146 @@ export function OrdersView() {
   );
 }
 
-
 /* ---------- Customers ---------- */
 function CustomersView() {
- const [toggledUserId, setToggledUserId] = useState("");
+  const [toggledUserId, setToggledUserId] = useState("");
 
-    const [pagination, setPagination] = useState({
-        page: 1,
-        limit: 10,
-        keyword: ""
-    })
-    const { data , isLoading, refetch } = useGetAllUsersQuery({ ...pagination }, {refetchOnFocus:true, refetchOnMountOrArgChange: true})
-    const [toggleuser, {isLoading : isToggleLoading}] = useToggleUserStatusMutation()
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    keyword: "",
+  });
+  const { data, isLoading, refetch } = useGetAllUsersQuery(
+    { ...pagination },
+    { refetchOnFocus: true, refetchOnMountOrArgChange: true },
+  );
+  const [toggleuser, { isLoading: isToggleLoading }] = useToggleUserStatusMutation();
 
-
-  const handleDelete = async (userId:any) => {
-    if(!userId) {
+  const handleDelete = async (userId: any) => {
+    if (!userId) {
       toast.error("User Id is Required");
-      return
+      return;
     }
-    setToggledUserId(userId)
+    setToggledUserId(userId);
     const res: any = await toggleuser(userId);
     if (res?.data?.success) {
       toast.success(res?.data?.message || "Operation successful");
-      refetch()
+      refetch();
     } else {
-      toast.error( res?.error?.data?.message || res?.error?.data?.errors[0].msg || "something went wrong",);
+      toast.error(
+        res?.error?.data?.message || res?.error?.data?.errors[0].msg || "something went wrong",
+      );
     }
-    setToggledUserId("")
+    setToggledUserId("");
+  };
+
+  const [updateUserRole, { isLoading: isUpdatingRole }] = useUpdateUserRoleMutation();
+  const [updatingRoleUserId, setUpdatingRoleUserId] = useState("");
+
+  const handleRoleChange = async (userId: string, newRole: string) => {
+    setUpdatingRoleUserId(userId);
+    try {
+      const res: any = await updateUserRole({ id: userId, body: { role: newRole } });
+      if (res?.data?.success) {
+        toast.success(res?.data?.message || "Role updated");
+        refetch();
+      } else {
+        toast.error(
+          res?.error?.data?.message || res?.error?.data?.errors?.[0]?.msg || "Something went wrong",
+        );
+      }
+    } finally {
+      setUpdatingRoleUserId("");
+    }
   };
 
   const exportPdf = () => {
     const doc = new jsPDF();
-    doc.setFontSize(16); doc.text("PakOvo — Customers", 14, 16);
-    doc.setFontSize(10); doc.text(`Generated ${new Date().toLocaleString()}`, 14, 22);
+    doc.setFontSize(16);
+    doc.text("PakOvo — Customers", 14, 16);
+    doc.setFontSize(10);
+    doc.text(`Generated ${new Date().toLocaleString()}`, 14, 22);
     autoTable(doc, {
       startY: 28,
       head: [["ID", "Name", "Email", "Joined", "Orders", "Spent"]],
-      // body: filtered.map((c) => [c.id, c.name, c.email, c.joined, c.orders, formatPrice(c.spent)]),
       styles: { fontSize: 9 },
       headStyles: { fillColor: [15, 27, 61] },
     });
     doc.save("customers.pdf");
-    // toast.success(`Exported ${filtered.length} customers to PDF`);
   };
 
   const exportCsv = () => {
     const rows = [["id", "name", "email", "joined", "orders", "spent"].join(",")];
-    // filtered.forEach((c) => rows.push([c.id, `"${c.name}"`, c.email, c.joined, c.orders, c.spent].join(",")));
     download("customers.csv", "text/csv", rows.join("\n"));
-    // toast.success(`Exported ${filtered.length} customers to CSV`);
   };
 
+  const roleOptions = ["user", "manager"];
+
+  const tableRows = (data?.docs || []).map((row: any) => ({
+    ...row,
+    role: (
+      <select
+        value={row.role}
+        disabled={isUpdatingRole && updatingRoleUserId === row._id}
+        onChange={(e) => handleRoleChange(row._id, e.target.value)}
+        className="glass rounded-md border border-white/20 bg-transparent px-2 py-1 text-sm outline-none disabled:opacity-50"
+      >
+        {roleOptions.map((r) => (
+          <option key={r} value={r}>
+            {r}
+          </option>
+        ))}
+      </select>
+    ),
+  }));
 
   if (isLoading) {
-      return (
-          <div className='grid place-content-center'>
-              <Spinner size='lg' />
-          </div>
-      )
+    return (
+      <div className="grid place-content-center">
+        <Spinner size="lg" />
+      </div>
+    );
   }
 
   return (
     <>
       <ToolbarCard
-        title="Customers" count={`Total ${data?.totalDocs || 0} Customers`}
+        title="Customers"
+        count={`Total ${data?.totalDocs || 0} Customers`}
         actions={
           <>
-            <Button variant="outline" size="sm" onClick={exportCsv}><Download className="h-4 w-4" /> CSV</Button>
-            <Button variant="premium" size="sm" onClick={exportPdf}><FileDown className="h-4 w-4" /> Export PDF</Button>
+            <Button variant="outline" size="sm" onClick={exportCsv}>
+              <Download className="h-4 w-4" /> CSV
+            </Button>
+            <Button variant="premium" size="sm" onClick={exportPdf}>
+              <FileDown className="h-4 w-4" /> Export PDF
+            </Button>
           </>
         }
       />
 
       <div className="overflow-x-auto rounded-2xl border border-border bg-card">
-     <Table
-                tableData={{ data: data?.docs || [], exlucdedFields: ["__v", "updatedAt", "_id", "refreshToken", "password", "otp","reviews","rating"] }}
-                setPagination={setPagination}
-                pagination={data || {}}
-                onDelete={handleDelete}
-                isDeleting={isToggleLoading}
-                deletingItemId={toggledUserId}
-            />
+        <Table
+          tableData={{
+            data: tableRows || [],
+            exlucdedFields: [
+              "__v",
+              "updatedAt",
+              "_id",
+              "refreshToken",
+              "password",
+              "otp",
+              "reviews",
+              "rating",
+              "assignedRoutes",
+            ],
+          }}
+          setPagination={setPagination}
+          pagination={data || {}}
+          onDelete={handleDelete}
+          isDeleting={isToggleLoading}
+          deletingItemId={toggledUserId}
+        />
       </div>
     </>
   );
@@ -1170,7 +1445,11 @@ function RoutesView() {
   const [editingRouteId, setEditingRouteId] = useState<string | null>(null);
   const [editingRouteName, setEditingRouteName] = useState("");
 
-  const { data: routesData, isLoading: isLoadingRoutes, refetch: refetchRoutes } = useGetAllRoutessQuery({});
+  const {
+    data: routesData,
+    isLoading: isLoadingRoutes,
+    refetch: refetchRoutes,
+  } = useGetAllRoutessQuery({});
   const [addRoute, { isLoading: isAddingRoute }] = useAddRoutesMutation();
   const [updateRoute, { isLoading: isUpdatingRoute }] = useUpdateRoutesMutation();
   const [deleteRoute] = useDeleteRoutesMutation();
@@ -1222,7 +1501,10 @@ function RoutesView() {
   };
 
   const handleDeleteRoute = async (route: any) => {
-    if (!confirm(`Delete route "${route.name}"? Managers assigned this route will lose access to it.`)) return;
+    if (
+      !confirm(`Delete route "${route.name}"? Managers assigned this route will lose access to it.`)
+    )
+      return;
     try {
       await deleteRoute(route._id).unwrap();
       toast.success("Route deleted");
@@ -1240,10 +1522,13 @@ function RoutesView() {
     role: "manager",
   });
 
-  const { data, isLoading, refetch } = useGetAllUsersQuery({ ...pagination }, {
-    refetchOnFocus: true,
-    refetchOnMountOrArgChange: true,
-  });
+  const { data, isLoading, refetch } = useGetAllUsersQuery(
+    { ...pagination },
+    {
+      refetchOnFocus: true,
+      refetchOnMountOrArgChange: true,
+    },
+  );
 
   const [assignRoutes, { isLoading: isAssigning }] = useAssignManagerRoutesMutation();
 
@@ -1254,7 +1539,9 @@ function RoutesView() {
     if (data?.docs) {
       const initial: Record<string, string[]> = {};
       data.docs.forEach((manager: any) => {
-        initial[manager._id] = (manager.assignedRoutes || []).map((r: any) => (typeof r === "string" ? r : r._id));
+        initial[manager._id] = (manager.assignedRoutes || []).map((r: any) =>
+          typeof r === "string" ? r : r._id,
+        );
       });
       setDraftAssignments(initial);
     }
@@ -1273,7 +1560,10 @@ function RoutesView() {
   const handleSaveAssignments = async (managerId: string) => {
     setSavingManagerId(managerId);
     try {
-      await assignRoutes({ managerId, body: { routes: draftAssignments[managerId] || [] } }).unwrap();
+      await assignRoutes({
+        managerId,
+        body: { routes: draftAssignments[managerId] || [] },
+      }).unwrap();
       toast.success("Routes updated");
       refetch();
     } catch (err: any) {
@@ -1484,7 +1774,8 @@ export function CategoriesView() {
   const docs: ServerCategory[] = categories?.docs ?? [];
 
   const handleDelete = async (c: ServerCategory) => {
-    if (!confirm(`Delete category "${c.name}"? Products in this category will keep their tag.`)) return;
+    if (!confirm(`Delete category "${c.name}"? Products in this category will keep their tag.`))
+      return;
     try {
       await deleteCategory(c._id).unwrap();
       toast.success("Category deleted");
@@ -1524,7 +1815,10 @@ export function CategoriesView() {
       />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {docs.map((c) => (
-          <div key={c._id} className="group overflow-hidden rounded-2xl border border-border bg-card">
+          <div
+            key={c._id}
+            className="group overflow-hidden rounded-2xl border border-border bg-card"
+          >
             <div className="relative h-32 w-full overflow-hidden">
               <img
                 src={UPLOADS_URL + c.image}
@@ -1556,14 +1850,18 @@ export function CategoriesView() {
                 <p className="mt-2 text-xs text-muted-foreground line-clamp-2">{c.description}</p>
               )}
               <p className="mt-3 text-xs text-muted-foreground">
-                <span className="font-semibold text-foreground">{c.subCategories?.length || 0} </span>
+                <span className="font-semibold text-foreground">
+                  {c.subCategories?.length || 0}{" "}
+                </span>
                 Sub Categories
               </p>
             </div>
           </div>
         ))}
         {docs.length === 0 && (
-          <p className="col-span-full py-8 text-center text-sm text-muted-foreground">No categories yet.</p>
+          <p className="col-span-full py-8 text-center text-sm text-muted-foreground">
+            No categories yet.
+          </p>
         )}
       </div>
 
@@ -1655,9 +1953,12 @@ function CategoryForm({
           <div>
             <label className="block text-xs font-medium text-muted-foreground">Image</label>
             <div className="mt-1 aspect-square overflow-hidden rounded-lg border border-border bg-surface">
-              <img src={imgPreview}
-              //  crossOrigin="anonymous"
-                alt="image" className="h-full w-full object-cover" />
+              <img
+                src={imgPreview}
+                //  crossOrigin="anonymous"
+                alt="image"
+                className="h-full w-full object-cover"
+              />
             </div>
             <label className="mt-2 flex cursor-pointer items-center justify-center gap-1 rounded-md border border-dashed border-border py-2 text-xs hover:bg-secondary">
               <Upload className="h-3 w-3" /> Upload
@@ -1670,9 +1971,16 @@ function CategoryForm({
             </label>
           </div>
           <div className="space-y-3">
-            <Field label="Name" required value={form.name} onChange={(v) => setForm({ ...form, name: v })} />
+            <Field
+              label="Name"
+              required
+              value={form.name}
+              onChange={(v) => setForm({ ...form, name: v })}
+            />
             <label className="block">
-              <span className="mb-1 block text-xs font-medium text-muted-foreground">Description</span>
+              <span className="mb-1 block text-xs font-medium text-muted-foreground">
+                Description
+              </span>
               <textarea
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -1687,7 +1995,10 @@ function CategoryForm({
           <label className="block text-xs font-medium text-muted-foreground">Subcategories</label>
           <div className="mt-2 flex flex-wrap gap-2">
             {subcategories.map((s) => (
-              <span key={s.name} className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-xs">
+              <span
+                key={s.name}
+                className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-xs"
+              >
                 {s.name}
                 <button
                   type="button"
@@ -1716,12 +2027,16 @@ function CategoryForm({
               placeholder="Add subcategory and press Enter"
               className="h-9 flex-1 rounded-md border border-input bg-background px-3 text-sm outline-none focus:border-brand"
             />
-            <Button type="button" variant="outline" size="sm" onClick={addSub}>Add</Button>
+            <Button type="button" variant="outline" size="sm" onClick={addSub}>
+              Add
+            </Button>
           </div>
         </div>
 
         <div className="flex justify-end gap-2 border-t border-border pt-4">
-          <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
           <Button type="submit" variant="premium" disabled={isSubmitting}>
             {isSubmitting ? "Saving..." : initial ? "Save changes" : "Create category"}
           </Button>
@@ -1751,12 +2066,24 @@ function StatusBadge({ status }: { status: AdminOrder["status"] }) {
     Refunded: "bg-destructive/10 text-destructive",
     Cancelled: "bg-secondary text-muted-foreground",
   };
-  return <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", map[status])}>{status}</span>;
+  return (
+    <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", map[status])}>
+      {status}
+    </span>
+  );
 }
 
 function ToolbarCard({
-  title, count, search, actions,
-}: { title: string; count?: string; search?: { value: string; onChange: (v: string) => void; placeholder: string }; actions?: React.ReactNode }) {
+  title,
+  count,
+  search,
+  actions,
+}: {
+  title: string;
+  count?: string;
+  search?: { value: string; onChange: (v: string) => void; placeholder: string };
+  actions?: React.ReactNode;
+}) {
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
@@ -1768,7 +2095,8 @@ function ToolbarCard({
           <div className="relative">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
-              value={search.value} onChange={(e) => search.onChange(e.target.value)}
+              value={search.value}
+              onChange={(e) => search.onChange(e.target.value)}
               placeholder={search.placeholder}
               className="h-9 w-full rounded-md border border-input bg-background pl-8 pr-3 text-sm outline-none focus:border-brand sm:w-64"
             />
@@ -1780,14 +2108,28 @@ function ToolbarCard({
   );
 }
 
-function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+function Modal({
+  title,
+  onClose,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <div className="relative z-10 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-background p-6 shadow-2xl">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="font-display text-lg font-semibold">{title}</h3>
-          <button onClick={onClose} aria-label="Close" className="rounded-md p-1.5 hover:bg-secondary"><X className="h-5 w-5" /></button>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="rounded-md p-1.5 hover:bg-secondary"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
         {children}
       </div>
@@ -1795,24 +2137,54 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
   );
 }
 
-function Field({ label, value, onChange, type = "text", required, defaultValue }: {
-  label: string; value: string; onChange: (v: string) => void;
-  type?: string; required?: boolean; defaultValue?: string;
+function Field({
+  label,
+  value,
+  onChange,
+  type = "text",
+  required,
+  defaultValue,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  type?: string;
+  required?: boolean;
+  defaultValue?: string;
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-xs font-medium text-muted-foreground">{label}{required && " *"}</span>
+      <span className="mb-1 block text-xs font-medium text-muted-foreground">
+        {label}
+        {required && " *"}
+      </span>
       <input
-        type={type} value={value} defaultValue={defaultValue}
-        onChange={(e) => onChange(e.target.value)} required={required}
+        type={type}
+        value={value}
+        defaultValue={defaultValue}
+        onChange={(e) => onChange(e.target.value)}
+        required={required}
         className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
       />
     </label>
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: string; tone: "ok" | "err" | "warn" }) {
-  const toneCls = tone === "ok" ? "bg-brand/10 text-brand" : tone === "err" ? "bg-destructive/10 text-destructive" : "bg-gold/15 text-gold-foreground";
+function Stat({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone: "ok" | "err" | "warn";
+}) {
+  const toneCls =
+    tone === "ok"
+      ? "bg-brand/10 text-brand"
+      : tone === "err"
+        ? "bg-destructive/10 text-destructive"
+        : "bg-gold/15 text-gold-foreground";
   return (
     <div className={cn("rounded-lg px-3 py-2 text-xs", toneCls)}>
       <p className="font-semibold">{value}</p>
@@ -1822,14 +2194,22 @@ function Stat({ label, value, tone }: { label: string; value: string; tone: "ok"
 }
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
-  return <div className="flex justify-between gap-3 border-b border-border pb-2"><span className="text-muted-foreground">{label}</span><span className="font-medium">{value}</span></div>;
+  return (
+    <div className="flex justify-between gap-3 border-b border-border pb-2">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium">{value}</span>
+    </div>
+  );
 }
 
 function download(filename: string, mime: string, content: string) {
   const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url; a.download = filename;
-  document.body.appendChild(a); a.click(); a.remove();
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

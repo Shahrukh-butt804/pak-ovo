@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Delete, Eye, Pencil, Recycle, Search, Trash, Trash2, TruckIcon } from "lucide-react";
 import { useNavigate } from "react-router";
 import Spinner from "../spinner";
@@ -61,18 +61,10 @@ const Table = ({
             onChange={handleEntryChange}
             className="glass appearance-none  rounded-lg border border-white/20  px-4 py-2 text-sm  outline-none transition-colors focus:border-white/40"
           >
-            <option value={10} >
-              10
-            </option>
-            <option value={20} >
-              20
-            </option>
-            <option value={50} >
-              50
-            </option>
-            <option value={100} >
-              100
-            </option>
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
           </select>
         </div>
 
@@ -134,23 +126,27 @@ const Table = ({
                             </span>
                           ) : (
                             <span className="truncate">
-                              {String(row[col]).length > 200
-                                ? String(row[col]).slice(0, 140) + "..."
-                                : String(row[col]) || <span className="text-gray-500">N/A</span>}
+                              {React.isValidElement(row[col])
+                                ? row[col]
+                                : String(row[col]).length > 200
+                                  ? String(row[col]).slice(0, 140) + "..."
+                                  : String(row[col]) || <span className="text-gray-500">N/A</span>}
                             </span>
                           )}
                         </td>
                       ),
                     )}
 
-                    <td className={`px-4 py-3 text-right flex ${onEdit ? 'justify-between': 'justify-center'} items-center`}>
+                    <td
+                      className={`px-4 py-3 text-right flex ${onEdit ? "justify-between" : "justify-center"} items-center`}
+                    >
                       {onEdit && (
                         <button
-                        onClick={() => onEdit(row)}
-                        className="inline-flex items-center justify-center rounded-full  p-2 text-black transition-colors  removebgColor"
+                          onClick={() => onEdit(row)}
+                          className="inline-flex items-center justify-center rounded-full  p-2 text-black transition-colors  removebgColor"
                         >
-                        <Pencil className="h-4 w-4 " />
-                      </button>
+                          <Pencil className="h-4 w-4 " />
+                        </button>
                       )}
                       <button
                         onClick={() => onDelete(row._id)}
@@ -159,12 +155,10 @@ const Table = ({
                       >
                         {isDeleting && deletingItemId === row._id ? (
                           <Spinner />
+                        ) : Boolean(row.isActive) ? (
+                          <Trash2 className="h-4 w-4" color="green" />
                         ) : (
-                          Boolean(row.isActive) ? 
-                            <Trash2 className="h-4 w-4" color="green" />
-                            :
-                            <Trash2 className="h-4 w-4" color="red" />
-                          
+                          <Trash2 className="h-4 w-4" color="red" />
                         )}
                       </button>
                     </td>
