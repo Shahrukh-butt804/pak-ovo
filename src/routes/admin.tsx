@@ -147,9 +147,7 @@ function AdminLogin() {
 
 type View = "dashboard" | "products" | "categories" | "orders" | "customers" | "routes";
 
-function getNavItems(): { key: View; icon: any; label: string }[] {
-  const user = useSelector(selectUser);
-
+function getNavItems(user: any): { key: View; icon: any; label: string }[] {
   const allProtectedRoutes: { key: View; icon: any; label: string }[] = [
     { key: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { key: "products", icon: Package, label: "Products" },
@@ -173,9 +171,15 @@ function getNavItems(): { key: View; icon: any; label: string }[] {
 
 function Admin() {
   const dispatch = useDispatch();
-  const [view, setView] = useState<View>("dashboard");
-  const [mobileNav, setMobileNav] = useState(false);
   const user = useSelector(selectUser);
+  const navItems = useMemo(() => getNavItems(user), [user]);
+
+  const [view, setView] = useState<View>(() => {
+    const hasDashboard = navItems.some((item) => item.key === "dashboard");
+    if (hasDashboard) return "dashboard";
+    return navItems[0]?.key ?? "dashboard"; // fallback if manager has zero assigned routes
+  });
+  const [mobileNav, setMobileNav] = useState(false);
 
   return (
     <div className="container-px mx-auto max-w-7xl py-8">
@@ -257,9 +261,11 @@ function Admin() {
 }
 
 function NavList({ view, setView }: { view: View; setView: (v: View) => void }) {
+  const user = useSelector(selectUser);
+
   return (
     <ul className="space-y-1">
-      {getNavItems().map(({ key, icon: Icon, label }) => (
+      {getNavItems(user).map(({ key, icon: Icon, label }) => (
         <li key={key}>
           <button
             onClick={() => setView(key)}
@@ -2055,7 +2061,7 @@ function Metric({ label, value, delta }: { label: string; value: string; delta?:
 }
 
 function StatusBadge({ status }: any) {
-  const map:any = {
+  const map: any = {
     pending: "bg-gold/15 text-gold-foreground",
     confirmed: "bg-brand/10 text-brand",
     dispatched: "bg-brand/10 text-brand",
