@@ -145,7 +145,7 @@ function Collection() {
           <div className="hidden overflow-hidden rounded-2xl border border-border md:block">
             <img
               src={UPLOADS_URL + category?.image}
-              crossOrigin="anonymous"
+              // crossOrigin="anonymous"
               alt={categoryLabel}
               loading="lazy"
               className="h-72 w-full object-cover"
