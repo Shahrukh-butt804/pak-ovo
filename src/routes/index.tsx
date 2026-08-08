@@ -1,30 +1,32 @@
-import { createFileRoute, Link } from "@/lib/router-compat";
-import { useEffect, useState } from "react";
-import {
-  ArrowRight,
-  Star,
-  Truck,
-  ShieldCheck,
-  RotateCcw,
-  Headphones,
-  Mail,
-  Clock,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { categories } from "@/data/categories";
-import { bestsellers, newArrivals, onSale, products } from "@/data/products";
-import { ProductRow, ProductGrid } from "@/components/product/ProductCard";
-import { formatPrice } from "@/lib/format";
-import { cn } from "@/lib/utils";
-import hero from "@/assets/hero-1.jpg";
 import bannerBeauty from "@/assets/banner-beauty.jpg";
 import bannerHome from "@/assets/banner-home.jpg";
+import catBedsheets from "@/assets/cat-bedsheets.jpg";
 import catCosmetics from "@/assets/cat-cosmetics.jpg";
+import catHerbs from "@/assets/cat-herbs.jpg";
 import catPerfumes from "@/assets/cat-perfumes.jpg";
 import catWatches from "@/assets/cat-watches.jpg";
-import catBedsheets from "@/assets/cat-bedsheets.jpg";
-import catCurtains from "@/assets/cat-curtains.jpg";
-import catHerbs from "@/assets/cat-herbs.jpg";
+import hero from "@/assets/hero-1.jpg";
+import { ProductRow } from "@/components/product/ProductCard";
+import { Button } from "@/components/ui/button";
+import { categories } from "@/data/categories";
+import { onSale, Product } from "@/data/products";
+import { formatPrice } from "@/lib/format";
+import { createFileRoute, Link } from "@/lib/router-compat";
+import { cn } from "@/lib/utils";
+import { useGetAllProductsQuery } from "@/redux/services/productSlice";
+import {
+  ArrowRight,
+  Clock,
+  Headphones,
+  Mail,
+  RotateCcw,
+  ShieldCheck,
+  Star,
+  Truck,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { normalizeProduct } from "./shop";
+import { UPLOADS_URL } from "@/constants/api";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -58,7 +60,7 @@ function Home() {
       <BeautyBanner />
       <BestSellersSection />
       <HomeBanner />
-      <HerbsSection />
+      {/* <HerbsSection /> */}
       <FlashSale />
       <Reviews />
       <TrustBar />
@@ -119,7 +121,7 @@ function Hero() {
               {[1, 2, 3, 4].map((i) => (
                 <div
                   key={i}
-                  className="h-8 w-8 rounded-full border-2 border-background bg-gradient-to-br from-brand to-gold"
+                  className="h-8 w-8 rounded-full border-2 border-background bg-linear-to-br from-brand to-gold"
                 />
               ))}
             </div>
@@ -237,7 +239,7 @@ function CategoryGrid() {
             key={c.slug}
             to="/collections/$slug"
             params={{ slug: c.slug }}
-            className="group relative overflow-hidden rounded-2xl bg-surface aspect-[4/5]"
+            className="group relative overflow-hidden rounded-2xl bg-surface aspect-4/5"
           >
             <img
               src={c.image}
@@ -245,7 +247,7 @@ function CategoryGrid() {
               loading="lazy"
               className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-navy/85 via-navy/20 to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-t from-navy/85 via-navy/20 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 p-5 text-navy-foreground">
               <p className="text-xs font-medium uppercase tracking-[0.2em] text-gold">
                 {c.tagline}
@@ -263,10 +265,39 @@ function CategoryGrid() {
 }
 
 function NewArrivalsSection() {
+  const { data, isLoading } = useGetAllProductsQuery(
+    {
+      page: 1,
+      limit: 8,
+      filter: "newest",
+    },
+    { refetchOnMountOrArgChange: true },
+  );
+
+  const items = useMemo(() => {
+    const docs: Product[] = (data?.docs ?? []).map((item: any, index: number) =>
+      normalizeProduct(item, index, "uncategorized"),
+    );
+
+    let list: Product[] = docs.map((product: Product) => ({
+      ...product,
+    }));
+
+    return list;
+  }, [data?.docs]);
+
   return (
     <section className="container-px mx-auto max-w-7xl py-16 md:py-20">
       <SectionHeader eyebrow="Just landed" title="New arrivals" link="/shop" />
-      <ProductRow products={newArrivals().slice(0, 8)} isFromDB={false} />
+      {isLoading ? (
+        <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, index) => (
+            <div key={index} className="h-72 animate-pulse rounded-2xl bg-muted" />
+          ))}
+        </div>
+      ) : (
+        <ProductRow products={items || []} isFromDB={true} />
+      )}
     </section>
   );
 }
@@ -290,9 +321,9 @@ function BeautyBanner() {
           src={images[i]}
           alt="Beauty & perfume collection"
           loading="lazy"
-          className="h-[320px] w-full object-cover transition-opacity duration-700 md:h-[400px]"
+          className="h-80 w-full object-cover transition-opacity duration-700 md:h-100"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/40 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-r from-background/95 via-background/40 to-transparent" />
         <div className="absolute inset-y-0 left-0 flex max-w-md flex-col justify-center p-8 md:p-16">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">
             Beauty & Perfume
@@ -315,11 +346,40 @@ function BeautyBanner() {
 }
 
 function BestSellersSection() {
+  const { data, isLoading } = useGetAllProductsQuery(
+    {
+      page: 1,
+      limit: 8,
+      filter: "popular",
+    },
+    { refetchOnMountOrArgChange: true },
+  );
+
+  const items = useMemo(() => {
+    const docs: Product[] = (data?.docs ?? []).map((item: any, index: number) =>
+      normalizeProduct(item, index, "uncategorized"),
+    );
+
+    let list: Product[] = docs.map((product: Product) => ({
+      ...product,
+    }));
+
+    return list;
+  }, [data?.docs]);
+
   return (
     <section className="bg-surface">
       <div className="container-px mx-auto max-w-7xl py-16 md:py-24">
         <SectionHeader eyebrow="Customer favorites" title="Best sellers" link="/shop" />
-        <ProductGrid products={bestsellers().slice(0, 8)} isFromDB={false} />
+        {isLoading ? (
+          <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div key={index} className="h-72 animate-pulse rounded-2xl bg-muted" />
+            ))}
+          </div>
+        ) : (
+          <ProductRow products={items || []} isFromDB={true} />
+        )}
       </div>
     </section>
   );
@@ -338,9 +398,9 @@ function HomeBanner() {
             src={bannerHome}
             alt="Bed sheets"
             loading="lazy"
-            className="h-[420px] w-full object-cover transition-transform duration-700 hover:scale-105"
+            className="h-105 w-full object-cover transition-transform duration-700 hover:scale-105"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-navy/80 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-navy/80 to-transparent" />
           <div className="absolute inset-x-0 bottom-0 p-8 text-navy-foreground">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">
               Home Living
@@ -358,9 +418,9 @@ function HomeBanner() {
             src={categories[4].image}
             alt="Curtains"
             loading="lazy"
-            className="h-[420px] w-full object-cover transition-transform duration-700 hover:scale-105"
+            className="h-105 w-full object-cover transition-transform duration-700 hover:scale-105"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-navy/80 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-navy/80 to-transparent" />
           <div className="absolute inset-x-0 bottom-0 p-8 text-navy-foreground">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">Curtains</p>
             <h3 className="mt-1 font-display text-3xl font-bold">Light, your way.</h3>
@@ -372,34 +432,54 @@ function HomeBanner() {
   );
 }
 
-function HerbsSection() {
-  const herbsProducts = products.filter((p) => p.category === "herbs").slice(0, 4);
-  return (
-    <section className="container-px mx-auto max-w-7xl py-16 md:py-24">
-      <div className="grid gap-12 md:grid-cols-[1fr_2fr]">
-        <div className="md:py-12">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">
-            Nature, gathered
-          </p>
-          <h2 className="mt-2 font-display text-4xl font-bold">Herbs & wellness</h2>
-          <p className="mt-4 text-muted-foreground">
-            Whole herbs, teas, oils and seeds — sourced for purity, packed with care, and crafted to
-            fit easily into modern routines.
-          </p>
-          <Button variant="premium" size="lg" className="mt-6" asChild>
-            <Link to="/collections/$slug" params={{ slug: "herbs" }}>
-              Shop herbs <ArrowRight className="ml-1 h-4 w-4" />
-            </Link>
-          </Button>
-        </div>
-        <ProductRow products={herbsProducts} isFromDB={false} />
-      </div>
-    </section>
-  );
-}
+// function HerbsSection() {
+//   const herbsProducts = products.filter((p) => p.category === "herbs").slice(0, 4);
+//   return (
+//     <section className="container-px mx-auto max-w-7xl py-16 md:py-24">
+//       <div className="grid gap-12 md:grid-cols-[1fr_2fr]">
+//         <div className="md:py-12">
+//           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">
+//             Nature, gathered
+//           </p>
+//           <h2 className="mt-2 font-display text-4xl font-bold">Herbs & wellness</h2>
+//           <p className="mt-4 text-muted-foreground">
+//             Whole herbs, teas, oils and seeds — sourced for purity, packed with care, and crafted to
+//             fit easily into modern routines.
+//           </p>
+//           <Button variant="premium" size="lg" className="mt-6" asChild>
+//             <Link to="/collections/$slug" params={{ slug: "herbs" }}>
+//               Shop herbs <ArrowRight className="ml-1 h-4 w-4" />
+//             </Link>
+//           </Button>
+//         </div>
+//         <ProductRow products={herbsProducts} isFromDB={false} />
+//       </div>
+//     </section>
+//   );
+// }
 
 function FlashSale() {
-  const sale = onSale().slice(0, 4);
+  const { data, isLoading } = useGetAllProductsQuery(
+    {
+      page: 1,
+      limit: 4,
+      filter: "popular",
+    },
+    { refetchOnMountOrArgChange: true },
+  );
+
+  const items = useMemo(() => {
+    const docs: Product[] = (data?.docs ?? []).map((item: any, index: number) =>
+      normalizeProduct(item, index, "uncategorized"),
+    );
+
+    let list: Product[] = docs.map((product: Product) => ({
+      ...product,
+    }));
+
+    return list;
+  }, [data?.docs]);
+
   return (
     <section className="bg-navy text-navy-foreground">
       <div className="container-px mx-auto max-w-7xl py-16 md:py-20">
@@ -409,33 +489,40 @@ function FlashSale() {
               <Clock className="h-3 w-3" /> Limited time
             </p>
             <h2 className="mt-1 font-display text-3xl font-bold md:text-4xl">
-              Flash sale — up to 30% off
+              Flash sale
             </h2>
           </div>
           <Countdown />
         </div>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-6">
-          {sale.map((p) => (
-            <Link key={p.id} to="/products/$slug" params={{ slug: p.slug }} className="group">
-              <div className="aspect-[4/5] overflow-hidden rounded-xl bg-surface">
-                <img
-                  src={p.image}
-                  alt={p.name}
-                  loading="lazy"
-                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                />
-              </div>
-              <p className="mt-3 text-sm font-medium line-clamp-2">{p.name}</p>
-              <div className="mt-1 flex items-baseline gap-2">
-                <span className="font-semibold text-gold">{formatPrice(p.price)}</span>
-                {p.compareAt && (
-                  <span className="text-xs text-navy-foreground/50 line-through">
-                    {formatPrice(p.compareAt)}
-                  </span>
-                )}
-              </div>
-            </Link>
-          ))}
+          {isLoading ? (
+              Array.from({ length: 4 }).map((_, index) => (
+                <div key={index} className="h-72 animate-pulse rounded-2xl bg-muted" />
+              ))
+          ) : (
+            items.map((p) => (
+              <Link key={p.id} to="/products/$slug" params={{ slug: p.slug }} className="group">
+                <div className="aspect-4/5 overflow-hidden rounded-xl bg-surface">
+                  <img
+                    src={UPLOADS_URL + p.image}
+                    alt={p.name}
+                    // crossOrigin="anonymous"
+                    loading="lazy"
+                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                </div>
+                <p className="mt-3 text-sm font-medium line-clamp-2">{p.name}</p>
+                <div className="mt-1 flex items-baseline gap-2">
+                  <span className="font-semibold text-gold">{formatPrice(p.price)}</span>
+                  {p.compareAt && (
+                    <span className="text-xs text-navy-foreground/50 line-through">
+                      {formatPrice(p.compareAt)}
+                    </span>
+                  )}
+                </div>
+              </Link>
+            ))
+          )}
         </div>
       </div>
     </section>
@@ -463,7 +550,7 @@ function Countdown() {
     return () => clearInterval(i);
   }, []);
   const cell = (n: number, label: string) => (
-    <div className="flex flex-col items-center rounded-xl border border-navy-foreground/15 bg-navy-foreground/5 px-3 py-2 min-w-[60px]">
+    <div className="flex flex-col items-center rounded-xl border border-navy-foreground/15 bg-navy-foreground/5 px-3 py-2 min-w-15">
       <span className="font-display text-xl font-bold tabular-nums">
         {String(n).padStart(2, "0")}
       </span>
@@ -513,7 +600,7 @@ function Reviews() {
             </div>
             <p className="mt-4 text-foreground leading-relaxed">"{r.text}"</p>
             <div className="mt-6 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-brand to-gold" />
+              <div className="h-10 w-10 rounded-full bg-linear-to-br from-brand to-gold" />
               <div>
                 <p className="text-sm font-semibold">{r.name}</p>
                 <p className="text-xs text-muted-foreground">{r.role}</p>
@@ -538,7 +625,7 @@ function TrustBar() {
       <div className="container-px mx-auto grid max-w-7xl gap-6 py-12 md:grid-cols-4">
         {items.map(({ icon: Icon, label, sub }) => (
           <div key={label} className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand/15 text-brand">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-linear-to-br from-brand to-gold text-brand">
               <Icon className="h-5 w-5" />
             </div>
             <div>
@@ -557,8 +644,8 @@ function Newsletter() {
   return (
     <section className="container-px mx-auto max-w-7xl py-16">
       <div className="relative overflow-hidden rounded-3xl bg-navy p-8 text-navy-foreground md:p-16">
-        <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-brand/30 blur-3xl" />
-        <div className="absolute -left-10 -bottom-20 h-72 w-72 rounded-full bg-gold/20 blur-3xl" />
+        <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-linear-to-br from-brand to-gold/30 blur-3xl" />
+        <div className="absolute -left-10 -bottom-20 h-72 w-72 rounded-full bg-linear-to-br from-gold to-gold/20 blur-3xl" />
         <div className="relative grid items-center gap-8 md:grid-cols-2">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">Newsletter</p>

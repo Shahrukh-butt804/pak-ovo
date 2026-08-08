@@ -278,7 +278,7 @@ function Shop() {
   );
 }
 
-function normalizeProduct(item: any, index: number, fallbackCategory: string): any {
+export function normalizeProduct(item: any, index: number, fallbackCategory: string): any {
   const name = String(item.name ?? item.title ?? "Untitled product");
   const categoryName =
     typeof item.category === "string"
