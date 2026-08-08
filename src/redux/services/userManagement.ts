@@ -21,13 +21,14 @@ export const userManagementSlice = createApi({
         }),
 
         getAllUsers: builder.query({
-            query: ({ page, limit, keyword }) => ({
+            query: ({ page, limit, keyword ,role}) => ({
                 url: "/",
                 method: "GET",
                 params: {
-                    page,
-                    limit,
-                    keyword
+                    ...(page && { page }),
+                    ...(limit && { limit }),
+                    ...(keyword && { keyword }),
+                    ...(role && { role }),
                 }
             }),
             transformResponse : (res) => res?.data
@@ -45,10 +46,17 @@ export const userManagementSlice = createApi({
                 method: "PUT",
             }),
             invalidatesTags: ["User"],
-        })
+        }),
+          assignManagerRoutes: builder.mutation({
+            query: ({body, managerId}) => ({
+                url: `/assign-routes/${managerId}`,
+                method: "PUT",
+                body,
+            }),
+        }),
     }),
 });
 
-export const { useGetReportQuery, useGetGrowthDataQuery, useGetAllUsersQuery, useGetUserByIdQuery, useToggleUserStatusMutation } = userManagementSlice;
+export const { useGetReportQuery, useGetGrowthDataQuery, useGetAllUsersQuery, useGetUserByIdQuery, useToggleUserStatusMutation, useAssignManagerRoutesMutation } = userManagementSlice;
 
 

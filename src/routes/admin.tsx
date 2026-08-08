@@ -10,8 +10,7 @@ import {
   useAdmin,
   validateProductRows,
   type AdminOrder,
-  type AdminProduct,
-  type BlogPost
+  type AdminProduct
 } from "@/lib/admin-store";
 import { formatPrice } from "@/lib/format";
 import { createFileRoute, Link, useNavigate } from "@/lib/router-compat";
@@ -21,31 +20,26 @@ import { useLoginMutation } from "@/redux/services/authSlice";
 import { useAddToCategoryMutation, useDeleteCategoryMutation, useGetAllCategoriesWithSubCategoriesQuery, useUpdateCategoryMutation } from "@/redux/services/categorySlice";
 import { useGetAllOrdersQuery, useUpdateOrderStatusMutation } from "@/redux/services/orderSlice";
 import { useAddProductMutation, useDeleteProductMutation, useGetAllProductsQuery, useUpdateProductMutation } from "@/redux/services/productSlice";
-import { useGetAllUsersQuery, useToggleUserStatusMutation } from "@/redux/services/userManagement";
-import { fi } from "date-fns/locale";
+import { useAddRoutesMutation, useDeleteRoutesMutation, useGetAllRoutessQuery, useUpdateRoutesMutation } from "@/redux/services/routeSlice";
+import { useAssignManagerRoutesMutation, useGetAllUsersQuery, useToggleUserStatusMutation } from "@/redux/services/userManagement";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import {
-  BarChart3,
   Check, ChevronLeft, ChevronRight,
   Download,
   FileDown,
-  FileText, Image as ImageIcon,
   LayoutDashboard,
-  Megaphone,
+  MapPin,
   Package,
   Pencil,
   Plus,
-  RefreshCw,
   Search,
-  Settings,
   ShoppingCart,
-  Star,
   Tag,
   Trash2,
   Upload,
   Users,
-  X,
+  X
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -123,48 +117,33 @@ function AdminLogin() {
   );
 }
 
-type View = "dashboard" | "products" | "categories" | "orders" | "customers" | "discounts" | "banners" | "reviews" | "content" | "blog" | "reports" | "settings";
-
-// const nav: { key: View; icon: any; label: string }[] = [
-//   { key: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
-//   { key: "products", icon: Package, label: "Products" },
-//   { key: "categories", icon: Tag, label: "Categories" },
-//   { key: "orders", icon: ShoppingCart, label: "Orders" },
-//   { key: "customers", icon: Users, label: "Customers" },
-//   { key: "discounts", icon: Megaphone, label: "Discounts" },
-//   { key: "banners", icon: ImageIcon, label: "Banners" },
-//   { key: "reviews", icon: Star, label: "Reviews" },
-//   { key: "content", icon: FileText, label: "Content (CMS)" },
-//   { key: "blog", icon: FileText, label: "Blog" },
-//   { key: "reports", icon: BarChart3, label: "Reports" },
-//   { key: "settings", icon: Settings, label: "Settings" },
-// ];
+type View = "dashboard" | "products" | "categories" | "orders" | "customers" | "routes";
 
 function getNavItems(): { key: View; icon: any; label: string }[] {
-  const user = useSelector(selectUser)
+  const user = useSelector(selectUser);
 
-  const protectedRoutes:any = [
+  const allProtectedRoutes: { key: View; icon: any; label: string }[] = [
     { key: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { key: "products", icon: Package, label: "Products" },
     { key: "categories", icon: Tag, label: "Categories" },
     { key: "orders", icon: ShoppingCart, label: "Orders" },
     { key: "customers", icon: Users, label: "Customers" },
-  ]
+  ];
 
-  if(user.role === "admin"){
-    const adminOnlyRoutes = [
-    { key: "discounts", icon: Megaphone, label: "Discounts" },
-    { key: "banners", icon: ImageIcon, label: "Banners" },
-    { key: "reviews", icon: Star, label: "Reviews" },
-    { key: "content", icon: FileText, label: "Content (CMS)" },
-    { key: "blog", icon: FileText, label: "Blog" },
-    { key: "reports", icon: BarChart3, label: "Reports" },
-    { key: "settings", icon: Settings, label: "Settings" },
-    ]
-    protectedRoutes.push(...adminOnlyRoutes)
+  // Admins see everything, plus the admin-only Routes management page
+  if (user.role === "admin") {
+    return [
+      ...allProtectedRoutes,
+      { key: "routes", icon: MapPin, label: "Routes" },
+    ];
   }
-   
-  return protectedRoutes
+
+  // Non-admins (managers) only see routes explicitly assigned to them
+  const assignedRouteNames = (user.assignedRoutes || []).map((r: any) =>
+    typeof r === "string" ? r : r.name
+  );
+
+  return allProtectedRoutes.filter((item) => assignedRouteNames.includes(item.key));
 }
 
 function Admin() {
@@ -223,13 +202,7 @@ function Admin() {
           {view === "categories" && <CategoriesView />}
           {view === "orders" && <OrdersView />}
           {view === "customers" && <CustomersView />}
-          {view === "discounts" && <DiscountsView />}
-          {view === "banners" && <BannersView />}
-          {view === "reviews" && <ReviewsView />}
-          {view === "content" && <CmsView />}
-          {view === "blog" && <BlogView />}
-          {view === "reports" && <ReportsView />}
-          {view === "settings" && <SettingsView />}
+          {view === "routes" && <RoutesView />}
         </div>
       </div>
     </div>
@@ -425,317 +398,6 @@ function getImageUrl(path?: string) {
   if (path.startsWith("http") || path.startsWith("blob:") || path.startsWith("data:")) return path;
   return `${UPLOADS_URL}${path.replace(/\\/g, "/")}`;
 }
-
-// export function ProductForm({
-//   initial,
-//   onClose,
-//   onSave,
-// }: {
-//   initial: any;
-//   onClose: any;
-//   onSave?: any;
-// }) {
-//   const [catPage, setCatPage] = useState(1);
-
-//   const { data: categoriesData, isLoading: isLoadingCategories } =
-//     useGetAllCategoriesWithSubCategoriesQuery({ page: catPage, limit: 10 }) as {
-//       data: any;
-//       isLoading: boolean;
-//     };
-
-//   const [updateProduct, { isLoading: isUpdating }] = useUpdateProductMutation();
-//   const [addProduct, { isLoading: isCreating }] = useAddProductMutation();
-//   const isSaving = isUpdating || isCreating;
-
-//   const [form, setForm] = useState<any>(() => ({
-//     title: initial?.title ?? "",
-//     description: initial?.description ?? "",
-//     price: initial?.price ?? 0,
-//     discountedPrice: initial?.discountedPrice ?? "",
-//     rating: initial?.rating ?? 4.5,
-//     reviews: initial?.reviews ?? 0,
-//     inStock: initial?.inStock ?? true,
-//     category: initial?.category?._id ?? "",
-//     subCategory: initial?.subCategory?._id ?? "",
-//   }));
-
-//   const [selectedCategoryLabel, setSelectedCategoryLabel] = useState(initial?.category?.name ?? "");
-//   const [selectedSubCategoryLabel, setSelectedSubCategoryLabel] = useState(initial?.subCategory?.name ?? "");
-
-//   const [imageFile, setImageFile] = useState<File | null>(null);
-//   const [imgPreview, setImgPreview] = useState<string>(getImageUrl(initial?.image));
-
-//   useEffect(() => {
-//     return () => {
-//       if (imgPreview.startsWith("blob:")) URL.revokeObjectURL(imgPreview);
-//     };
-//   }, [imgPreview]);
-
-//   const handleImage = (file: File | null) => {
-//     if (!file) return;
-//     if (!file.type.startsWith("image/")) {
-//       toast.error("Please select an image file");
-//       return;
-//     }
-//     setImageFile(file);
-//     setImgPreview(URL.createObjectURL(file));
-//   };
-
-//   const categories = categoriesData?.docs ?? [];
-//   const totalPages = categoriesData?.totalPages ?? 1;
-
-//   const selectedCategory = useMemo(
-//     () => categories.find((c:any) => c._id === form.category),
-//     [categories, form.category],
-//   );
-//   const subCategoryOptions = selectedCategory?.subCategories ?? [];
-
-//   const handleSelectCategory = (cat: any) => {
-//     setForm((f:any) => ({ ...f, category: cat._id, subCategory: "" }));
-//     setSelectedCategoryLabel(cat.name);
-//     setSelectedSubCategoryLabel("");
-//   };
-
-//   const handleSelectSubCategory = (sub: any) => {
-//     setForm((f:any) => ({ ...f, subCategory: sub._id }));
-//     setSelectedSubCategoryLabel(sub.name);
-//   };
-
-//   const handleSubmit = async (e: React.FormEvent) => {
-//     e.preventDefault();
-
-//     if (!form.title.trim()) return toast.error("Title is required");
-//     if (!form.category) return toast.error("Please select a category");
-//     if (!form.subCategory) return toast.error("Please select a subcategory");
-//     if (form.price < 0) return toast.error("Price must be positive");
-//     if (form.discountedPrice !== "" && Number(form.discountedPrice) > form.price) {
-//       return toast.error("Discounted price can't exceed price");
-//     }
-//     if (!initial && !imageFile) return toast.error("Please upload a product image");
-
-//     const fd = new FormData();
-//     fd.append("title", form.title.trim());
-//     fd.append("description", form.description);
-//     fd.append("category", form.category);
-//     fd.append("subCategory", form.subCategory);
-//     fd.append("price", String(form.price));
-//     fd.append("discountedPrice", form.discountedPrice === "" ? "" : String(form.discountedPrice));
-//     fd.append("rating", String(form.rating));
-//     fd.append("reviews", String(form.reviews));
-//     fd.append("inStock", String(form.inStock));
-//     if (imageFile) fd.append("image", imageFile);
-
-//     console.log(form.discountedPrice)
-//     try {
-//       if (initial) {
-//         await updateProduct({ id: initial._id, body: fd }).unwrap();
-//         toast.success("Product updated");
-//       } else {
-//         await addProduct(fd).unwrap();
-//         toast.success("Product created");
-//       }
-//       onSave?.();
-//       onClose();
-//     } catch (err: any) {
-//       toast.error(err?.data?.message || err?.data?.errors[0]?.msg || "Something went wrong");
-//     }
-//   };
-
-//   return (
-//     <Modal title={initial ? "Edit product" : "New product"} onClose={onClose}>
-//       <form onSubmit={handleSubmit} className="space-y-5">
-//         {/* Image + basic fields */}
-//         <div className="grid gap-4 sm:grid-cols-[120px_1fr]">
-//           <div>
-//             <label className="block text-xs font-medium text-muted-foreground">Image</label>
-//             <div className="mt-1 aspect-square overflow-hidden rounded-lg border border-border bg-surface">
-//               <img src={getImageUrl(imgPreview)}
-//               //  crossOrigin="anonymous"
-//                 alt="" className="h-full w-full object-cover" />
-//             </div>
-//             <label className="mt-2 flex cursor-pointer items-center justify-center gap-1 rounded-md border border-dashed border-border py-2 text-xs hover:bg-secondary">
-//               <Upload className="h-3 w-3" /> Upload
-//               <input
-//                 type="file"
-//                 accept="image/*"
-//                 className="hidden"
-//                 onChange={(e) => handleImage(e.target.files?.[0] ?? null)}
-//               />
-//             </label>
-//           </div>
-
-//           <div className="space-y-3">
-//             <Field
-//               label="Title"
-//               required
-//               value={form.title}
-//               onChange={(v) => setForm((f:any) => ({ ...f, title: v }))}
-//             />
-//             <div className="grid gap-2 sm:grid-cols-2">
-//               <Field
-//                 label="Price"
-//                 type="number"
-//                 value={String(form.price)}
-//                 onChange={(v) => setForm((f:any) => ({ ...f, price: Number(v) }))}
-//               />
-//               <Field
-//                 label="Discounted price"
-//                 type="number"
-//                 value={form.discountedPrice === "" ? "" : String(form.discountedPrice)}
-//                 onChange={(v) => setForm((f:any) => ({ ...f, discountedPrice: v === "" ? "" : Number(v) }))}
-//               />
-//             </div>
-
-//                <div className="grid gap-2 sm:grid-cols-2">
-//               <Field
-//                 label="Reviews"
-//                 type="number"
-//                 value={String(form.reviews)}
-//                 onChange={(v) => setForm((f:any) => ({ ...f, reviews: Number(v) }))}
-//               />
-//             <Field
-//               label="Rating"
-//               type="number"
-//               value={String(form.rating)}
-//               onChange={(v) => setForm((f:any) => ({ ...f, rating: Number(v) }))}
-//             />
-//             </div>
-//             <label className="block">
-//               <span className="mb-1 block text-xs font-medium text-muted-foreground">Description</span>
-//               <textarea
-//                 value={form.description}
-//                 onChange={(e) => setForm((f:any) => ({ ...f, description: e.target.value }))}
-//                 rows={3}
-//                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
-//               />
-//             </label>
-//             <label className="flex items-center gap-2 text-sm">
-//               <input
-//                 type="checkbox"
-//                 checked={form.inStock}
-//                 onChange={(e) => setForm((f:any) => ({ ...f, inStock: e.target.checked }))}
-//               />
-//               In stock
-//             </label>
-//           </div>
-//         </div>
-
-//         {/* Category picker (paginated) */}
-//         <div className="border-t border-border pt-4">
-//           <div className="mb-2 flex items-center justify-between">
-//             <span className="text-xs font-medium text-muted-foreground">
-//               Category
-//               {selectedCategoryLabel && <span className="ml-1 text-foreground">— {selectedCategoryLabel}</span>}
-//             </span>
-//             {totalPages > 1 && (
-//               <div className="flex items-center gap-1 text-xs">
-//                 <button
-//                   type="button"
-//                   disabled={catPage <= 1}
-//                   onClick={() => setCatPage((p) => p - 1)}
-//                   className="rounded p-1 disabled:opacity-30 hover:bg-secondary"
-//                 >
-//                   <ChevronLeft className="h-3.5 w-3.5" />
-//                 </button>
-//                 <span className="text-muted-foreground">{catPage} / {totalPages}</span>
-//                 <button
-//                   type="button"
-//                   disabled={catPage >= totalPages}
-//                   onClick={() => setCatPage((p) => p + 1)}
-//                   className="rounded p-1 disabled:opacity-30 hover:bg-secondary"
-//                 >
-//                   <ChevronRight className="h-3.5 w-3.5" />
-//                 </button>
-//               </div>
-//             )}
-//           </div>
-
-//           {isLoadingCategories ? (
-//             <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-//               {Array.from({ length: 10 }).map((_, i) => (
-//                 <div key={i} className="aspect-square animate-pulse rounded-lg bg-secondary" />
-//               ))}
-//             </div>
-//           ) : (
-//             <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-//               {categories.map((cat:any) => {
-//                 const isSelected = form.category === cat._id;
-//                 return (
-//                   <button
-//                     type="button"
-//                     key={cat._id}
-//                     onClick={() => handleSelectCategory(cat)}
-//                     className={`group relative flex flex-col items-center gap-1 rounded-lg border p-2 text-center transition-colors ${
-//                       isSelected ? "border-brand bg-brand/10" : "border-border hover:bg-secondary"
-//                     }`}
-//                   >
-//                     {isSelected && (
-//                       <span className="absolute right-1 top-1 rounded-full bg-brand p-0.5">
-//                         <Check className="h-2.5 w-2.5 text-white" />
-//                       </span>
-//                     )}
-//                     <div className="aspect-square w-full overflow-hidden rounded-md bg-surface">
-//                       {cat.image && (
-//                         <img src={getImageUrl(cat.image)} 
-//                         // crossOrigin="anonymous"
-//                          alt="category" className="h-full w-full object-cover" />
-//                       )}
-//                     </div>
-//                     <span className="line-clamp-1 text-[11px] capitalize">{cat.name}</span>
-//                   </button>
-//                 );
-//               })}
-//               {categories.length === 0 && (
-//                 <p className="col-span-full py-4 text-center text-xs text-muted-foreground">
-//                   No categories found.
-//                 </p>
-//               )}
-//             </div>
-//           )}
-//         </div>
-
-//         {/* Subcategory picker — depends on selected category */}
-//         {form.category && (
-//           <div>
-//             <span className="mb-2 block text-xs font-medium text-muted-foreground">
-//               Subcategory
-//               {selectedSubCategoryLabel && (
-//                 <span className="ml-1 text-foreground">— {selectedSubCategoryLabel}</span>
-//               )}
-//             </span>
-//             <div className="flex flex-wrap gap-2">
-//               {subCategoryOptions.map((sub:any) => {
-//                 const isSelected = form.subCategory === sub._id;
-//                 return (
-//                   <button
-//                     type="button"
-//                     key={sub._id}
-//                     onClick={() => handleSelectSubCategory(sub)}
-//                     className={`rounded-full border px-3 py-1 text-xs capitalize transition-colors ${
-//                       isSelected ? "border-brand bg-brand text-white" : "border-border hover:bg-secondary"
-//                     }`}
-//                   >
-//                     {sub.name}
-//                   </button>
-//                 );
-//               })}
-//               {subCategoryOptions.length === 0 && (
-//                 <p className="text-xs text-muted-foreground">This category has no subcategories yet.</p>
-//               )}
-//             </div>
-//           </div>
-//         )}
-
-//         <div className="flex justify-end gap-2 border-t border-border pt-4">
-//           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-//           <Button type="submit" variant="premium" disabled={isSaving}>
-//             {isSaving ? "Saving..." : initial ? "Save changes" : "Create product"}
-//           </Button>
-//         </div>
-//       </form>
-//     </Modal>
-//   );
-// }
 
 export function ProductForm({
   initial,
@@ -1209,116 +871,8 @@ function BulkImport({ onClose, onImport }: { onClose: () => void; onImport: (row
   );
 }
 
-/* ---------- Orders ---------- */
-// function OrdersView() {
-//   const { orders, updateOrderStatus, deleteOrder } = useAdmin();
-//   const [q, setQ] = useState("");
-//   const [status, setStatus] = useState<string>("");
-//   const [openOrder, setOpenOrder] = useState<AdminOrder | null>(null);
-
-//     const [pagination, setPagination] = useState({
-//         page: 1,
-//         limit: 10,
-//         keyword: ""
-//     })
-//     const { data, isLoading, refetch } = useGetAllOrdersQuery({ ...pagination }, { refetchOnMountOrArgChange: true})
-//     const [updateOrder] = useUpdateOrderStatusMutation()
-
-
-//   const filtered = orders.filter((o) =>
-//     (!q || o.id.toLowerCase().includes(q.toLowerCase()) || o.customer.toLowerCase().includes(q.toLowerCase())) &&
-//     (!status || o.status === status),
-//   );
-
-//   const exportPdf = () => {
-//     const doc = new jsPDF();
-//     doc.setFontSize(16); doc.text("PakOvo — Orders", 14, 16);
-//     doc.setFontSize(10); doc.text(new Date().toLocaleString(), 14, 22);
-//     autoTable(doc, {
-//       startY: 28,
-//       head: [["Order", "Customer", "Email", "Date", "Items", "Total", "Status"]],
-//       body: filtered.map((o) => [o.id, o.customer, o.email, o.date, o.items, formatPrice(o.total), o.status]),
-//       styles: { fontSize: 9 },
-//       headStyles: { fillColor: [15, 27, 61] },
-//     });
-//     doc.save("orders.pdf");
-//     toast.success(`Exported ${filtered.length} orders`);
-//   };
-
-//   return (
-//     <>
-//       <ToolbarCard
-//         title="Orders" count={`${orders.length} total`}
-//         search={{ value: q, onChange: setQ, placeholder: "Search orders or customers…" }}
-//         actions={
-//           <>
-//             <select value={status} onChange={(e) => setStatus(e.target.value)} className="h-9 rounded-md border border-input bg-background px-3 text-sm">
-//               <option value="">All statuses</option>
-//               {["Pending", "Paid", "Fulfilled", "Delivered", "Refunded", "Cancelled"].map((s) => <option key={s} value={s}>{s}</option>)}
-//             </select>
-//             <Button variant="outline" size="sm" onClick={exportPdf}><FileDown className="h-4 w-4" /> Export PDF</Button>
-//           </>
-//         }
-//       />
-
-//       <div className="overflow-x-auto rounded-2xl border border-border bg-card">
-//         <table className="w-full min-w-180 text-sm">
-//           <thead className="bg-surface text-left text-xs uppercase tracking-wider text-muted-foreground">
-//             <tr>
-//               <th className="p-3">Order</th><th className="p-3">Customer</th><th className="p-3">Date</th>
-//               <th className="p-3">Total</th><th className="p-3">Status</th><th className="p-3 text-right">Actions</th>
-//             </tr>
-//           </thead>
-//           <tbody className="divide-y divide-border">
-//             {filtered.map((o) => (
-//               <tr key={o.id}>
-//                 <td className="p-3 font-medium">{o.id}</td>
-//                 <td className="p-3 text-muted-foreground">{o.customer}</td>
-//                 <td className="p-3 text-muted-foreground">{o.date}</td>
-//                 <td className="p-3">{formatPrice(o.total)}</td>
-//                 <td className="p-3">
-//                   <select
-//                     value={o.status}
-//                     onChange={(e) => { updateOrderStatus(o.id, e.target.value as AdminOrder["status"]); toast.success(`Order ${o.id} → ${e.target.value}`); }}
-//                     className="h-7 rounded-md border border-input bg-background px-2 text-xs"
-//                   >
-//                     {["Pending", "Paid", "Fulfilled", "Delivered", "Refunded", "Cancelled"].map((s) => <option key={s} value={s}>{s}</option>)}
-//                   </select>
-//                 </td>
-//                 <td className="p-3">
-//                   <div className="flex justify-end gap-1">
-//                     <button onClick={() => setOpenOrder(o)} className="rounded-md p-1.5 hover:bg-secondary" aria-label="View"><Pencil className="h-4 w-4" /></button>
-//                     <button onClick={() => { if (confirm(`Delete order ${o.id}?`)) { deleteOrder(o.id); toast.success("Order deleted"); } }} className="rounded-md p-1.5 text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></button>
-//                   </div>
-//                 </td>
-//               </tr>
-//             ))}
-//           </tbody>
-//         </table>
-//         {filtered.length === 0 && <p className="p-8 text-center text-sm text-muted-foreground">No orders found.</p>}
-//       </div>
-
-//       {openOrder && (
-//         <Modal title={`Order ${openOrder.id}`} onClose={() => setOpenOrder(null)}>
-//           <div className="grid gap-3 text-sm">
-//             <Row label="Customer" value={openOrder.customer} />
-//             <Row label="Email" value={openOrder.email} />
-//             <Row label="Date" value={openOrder.date} />
-//             <Row label="Items" value={String(openOrder.items)} />
-//             <Row label="Total" value={formatPrice(openOrder.total)} />
-//             <Row label="Status" value={<StatusBadge status={openOrder.status} />} />
-//           </div>
-//         </Modal>
-//       )}
-//     </>
-//   );
-// }
-
-
 const STATUS_OPTIONS = ["Pending", "confirmed", "dispatched", "delivered", "cancelled"];
 
-// Adapts a raw API order doc to the shape this component renders.
-// Confirm/adjust field names against your actual API response.
 function mapOrder(o: any) {
   return {
     id: o._id ?? o.id,
@@ -1524,8 +1078,6 @@ export function OrdersView() {
 }
 
 
-
-
 /* ---------- Customers ---------- */
 function CustomersView() {
  const [toggledUserId, setToggledUserId] = useState("");
@@ -1612,6 +1164,287 @@ function CustomersView() {
   );
 }
 
+function RoutesView() {
+  // ---------- Routes management (top section) ----------
+  const [newRouteName, setNewRouteName] = useState("");
+  const [editingRouteId, setEditingRouteId] = useState<string | null>(null);
+  const [editingRouteName, setEditingRouteName] = useState("");
+
+  const { data: routesData, isLoading: isLoadingRoutes, refetch: refetchRoutes } = useGetAllRoutessQuery({});
+  const [addRoute, { isLoading: isAddingRoute }] = useAddRoutesMutation();
+  const [updateRoute, { isLoading: isUpdatingRoute }] = useUpdateRoutesMutation();
+  const [deleteRoute] = useDeleteRoutesMutation();
+
+  const routes = routesData?.docs || routesData || [];
+
+  const CAMEL_CASE_REGEX = (value: string) => /^([a-z][a-zA-Z0-9]*)+$/.test(value.trim());
+
+  const handleAddRoute = async () => {
+    const name = newRouteName.trim();
+    if (!name) return toast.error("Route name is required");
+    if (!CAMEL_CASE_REGEX(name)) {
+      return toast.error("Route name must be in camelCase (e.g. manageOrders)");
+    }
+    try {
+      await addRoute({ name }).unwrap();
+      toast.success("Route added");
+      setNewRouteName("");
+      refetchRoutes();
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Failed to add route");
+    }
+  };
+
+  const startEditRoute = (route: any) => {
+    setEditingRouteId(route._id);
+    setEditingRouteName(route.name);
+  };
+
+  const cancelEditRoute = () => {
+    setEditingRouteId(null);
+    setEditingRouteName("");
+  };
+
+  const saveEditRoute = async (routeId: string) => {
+    const name = editingRouteName.trim();
+    if (!name) return toast.error("Route name is required");
+    if (!CAMEL_CASE_REGEX(name)) {
+      return toast.error("Route name must be in camelCase (e.g. manageOrders)");
+    }
+    try {
+      await updateRoute({ id: routeId, body: { name } }).unwrap();
+      toast.success("Route updated");
+      cancelEditRoute();
+      refetchRoutes();
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Failed to update route");
+    }
+  };
+
+  const handleDeleteRoute = async (route: any) => {
+    if (!confirm(`Delete route "${route.name}"? Managers assigned this route will lose access to it.`)) return;
+    try {
+      await deleteRoute(route._id).unwrap();
+      toast.success("Route deleted");
+      refetchRoutes();
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Failed to delete route");
+    }
+  };
+
+  // ---------- Managers + route assignment (table) ----------
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    keyword: "",
+    role: "manager",
+  });
+
+  const { data, isLoading, refetch } = useGetAllUsersQuery({ ...pagination }, {
+    refetchOnFocus: true,
+    refetchOnMountOrArgChange: true,
+  });
+
+  const [assignRoutes, { isLoading: isAssigning }] = useAssignManagerRoutesMutation();
+
+  const [draftAssignments, setDraftAssignments] = useState<Record<string, string[]>>({});
+  const [savingManagerId, setSavingManagerId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (data?.docs) {
+      const initial: Record<string, string[]> = {};
+      data.docs.forEach((manager: any) => {
+        initial[manager._id] = (manager.assignedRoutes || []).map((r: any) => (typeof r === "string" ? r : r._id));
+      });
+      setDraftAssignments(initial);
+    }
+  }, [data]);
+
+  const toggleRouteForManager = (managerId: string, routeId: string) => {
+    setDraftAssignments((prev) => {
+      const current = prev[managerId] || [];
+      const next = current.includes(routeId)
+        ? current.filter((id) => id !== routeId)
+        : [...current, routeId];
+      return { ...prev, [managerId]: next };
+    });
+  };
+
+  const handleSaveAssignments = async (managerId: string) => {
+    setSavingManagerId(managerId);
+    try {
+      await assignRoutes({ managerId, body: { routes: draftAssignments[managerId] || [] } }).unwrap();
+      toast.success("Routes updated");
+      refetch();
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Failed to update routes");
+    } finally {
+      setSavingManagerId(null);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="grid place-content-center">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {/* ---------- Route Management ---------- */}
+      <ToolbarCard title="Access Routes" count={`${routes.length} routes`} />
+
+      <div className="mb-6 rounded-2xl border border-border bg-card p-4">
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row">
+          <input
+            value={newRouteName}
+            onChange={(e) => setNewRouteName(e.target.value)}
+            placeholder="e.g. ManageOrders"
+            onKeyDown={(e) => e.key === "Enter" && handleAddRoute()}
+            className="h-9 flex-1 rounded-md border border-input bg-background px-3 text-sm outline-none focus:border-brand"
+          />
+          <Button variant="premium" size="sm" onClick={handleAddRoute} disabled={isAddingRoute}>
+            <Plus className="h-4 w-4" /> Add Route
+          </Button>
+        </div>
+
+        {isLoadingRoutes ? (
+          <p className="text-sm text-muted-foreground">Loading routes...</p>
+        ) : routes?.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No routes created yet.</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {routes?.map((route: any) => (
+              <div
+                key={route._id}
+                className="flex items-center gap-2 rounded-full border border-border bg-secondary/40 px-3 py-1.5"
+              >
+                {editingRouteId === route._id ? (
+                  <>
+                    <input
+                      value={editingRouteName}
+                      onChange={(e) => setEditingRouteName(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && saveEditRoute(route._id)}
+                      autoFocus
+                      className="h-6 w-32 rounded border border-input bg-background px-2 text-xs outline-none focus:border-brand"
+                    />
+                    <button
+                      onClick={() => saveEditRoute(route._id)}
+                      disabled={isUpdatingRoute}
+                      className="text-brand hover:text-brand/80"
+                      aria-label="Save"
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={cancelEditRoute}
+                      className="text-muted-foreground hover:text-destructive"
+                      aria-label="Cancel"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-xs font-medium">{route.name}</span>
+                    <button
+                      onClick={() => startEditRoute(route)}
+                      className="text-muted-foreground hover:text-foreground"
+                      aria-label="Edit"
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteRoute(route)}
+                      className="text-muted-foreground hover:text-destructive"
+                      aria-label="Delete"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ---------- Managers + Route Assignment ---------- */}
+      <ToolbarCard title="Managers" count={`Total ${data?.totalDocs || 0} Managers`} />
+
+      <div className="overflow-x-auto rounded-2xl border border-border bg-card">
+        <table className="w-full min-w-180 text-sm">
+          <thead className="bg-surface text-left text-xs uppercase tracking-wider text-muted-foreground">
+            <tr>
+              <th className="p-3">Name</th>
+              <th className="p-3">Email</th>
+              <th className="p-3">Assigned Routes</th>
+              <th className="p-3 text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {(data?.docs || []).map((manager: any) => {
+              const assigned = draftAssignments[manager._id] || [];
+              return (
+                <tr key={manager._id}>
+                  <td className="p-3 font-medium">{manager.fullName || manager.name}</td>
+                  <td className="p-3 text-muted-foreground">{manager.email}</td>
+                  <td className="p-3">
+                    <div className="flex flex-wrap gap-2">
+                      {routes.map((route: any) => {
+                        const isChecked = assigned.includes(route._id);
+                        return (
+                          <label
+                            key={route._id}
+                            className={`flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors ${
+                              isChecked
+                                ? "border-brand bg-brand/10 text-brand"
+                                : "border-border text-muted-foreground hover:bg-secondary"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => toggleRouteForManager(manager._id, route._id)}
+                              className="hidden"
+                            />
+                            {route.name}
+                          </label>
+                        );
+                      })}
+                      {routes.length === 0 && (
+                        <span className="text-xs text-muted-foreground">No routes available</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="p-3 text-right">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleSaveAssignments(manager._id)}
+                      disabled={isAssigning && savingManagerId === manager._id}
+                    >
+                      {isAssigning && savingManagerId === manager._id ? "Saving..." : "Save"}
+                    </Button>
+                  </td>
+                </tr>
+              );
+            })}
+            {(!data?.docs || data.docs.length === 0) && (
+              <tr>
+                <td colSpan={4} className="p-8 text-center text-sm text-muted-foreground">
+                  No managers found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
 
 interface SubCategory {
   _id?: string;
@@ -1898,361 +1731,6 @@ function CategoryForm({
   );
 }
 
-/* ---------- Discounts ---------- */
-function DiscountsView() {
-  const [codes, setCodes] = useState([
-    { code: "WELCOME10", off: "10%", status: "Active", uses: 248 },
-    { code: "SUMMER25", off: "25%", status: "Active", uses: 94 },
-    { code: "VIP100", off: "Rs 1,000", status: "Paused", uses: 12 },
-  ]);
-  return (
-    <>
-      <ToolbarCard
-        title="Discount codes" count={`${codes.length} codes`}
-        actions={
-          <Button variant="premium" size="sm" onClick={() => {
-            const code = prompt("Discount code (e.g. SPRING20)")?.toUpperCase();
-            const off = prompt("Discount value (10% or Rs 500)") || "";
-            if (code) { setCodes([{ code, off, status: "Active", uses: 0 }, ...codes]); toast.success("Code created"); }
-          }}><Plus className="h-4 w-4" /> New code</Button>
-        }
-      />
-      <div className="overflow-x-auto rounded-2xl border border-border bg-card">
-        <table className="w-full min-w-120 text-sm">
-          <thead className="bg-surface text-left text-xs uppercase tracking-wider text-muted-foreground">
-            <tr><th className="p-3">Code</th><th className="p-3">Discount</th><th className="p-3">Uses</th><th className="p-3">Status</th><th className="p-3 text-right">Actions</th></tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {codes.map((c) => (
-              <tr key={c.code}>
-                <td className="p-3 font-mono font-medium">{c.code}</td>
-                <td className="p-3">{c.off}</td>
-                <td className="p-3 text-muted-foreground">{c.uses}</td>
-                <td className="p-3">
-                  <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", c.status === "Active" ? "bg-brand/10 text-brand" : "bg-secondary text-muted-foreground")}>{c.status}</span>
-                </td>
-                <td className="p-3 text-right">
-                  <button onClick={() => { setCodes(codes.filter((x) => x.code !== c.code)); toast.success("Code removed"); }} className="rounded-md p-1.5 text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </>
-  );
-}
-
-/* ---------- Banners ---------- */
-function BannersView() {
-  const { banners, addBanner, updateBanner, deleteBanner } = useAdmin();
-
-  return (
-    <>
-      <ToolbarCard
-        title="Banners" count={`${banners.length} banners`}
-        actions={
-          <Button variant="premium" size="sm" onClick={() => addBanner({ title: "New banner", subtitle: "Edit me", image: catFallback, active: true })}>
-            <Plus className="h-4 w-4" /> New banner
-          </Button>
-        }
-      />
-      <div className="grid gap-4 md:grid-cols-2">
-        {banners.map((b) => (
-          <div key={b.id} className="overflow-hidden rounded-2xl border border-border bg-card">
-            <img src={b.image} alt={b.title} className="h-40 w-full object-cover" />
-            <div className="p-4 space-y-2">
-              <input value={b.title} onChange={(e) => updateBanner(b.id, { title: e.target.value })} className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm font-semibold" />
-              <input value={b.subtitle} onChange={(e) => updateBanner(b.id, { subtitle: e.target.value })} className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm" />
-              <div className="flex items-center justify-between text-xs">
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" checked={b.active} onChange={(e) => updateBanner(b.id, { active: e.target.checked })} />
-                  {b.active ? "Live" : "Hidden"}
-                </label>
-                <label className="cursor-pointer text-brand hover:underline">
-                  Change image
-                  <input type="file" accept="image/*" className="hidden" onChange={(e) => {
-                    const f = e.target.files?.[0]; if (!f) return;
-                    const reader = new FileReader();
-                    reader.onload = () => { updateBanner(b.id, { image: reader.result as string }); toast.success("Banner updated"); };
-                    reader.readAsDataURL(f);
-                  }} />
-                </label>
-                <button onClick={() => { deleteBanner(b.id); toast.success("Banner removed"); }} className="text-destructive hover:underline">Delete</button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </>
-  );
-}
-
-/* ---------- Reviews ---------- */
-function ReviewsView() {
-  const reviews = [
-    { id: 1, product: "Velvet Matte Lipstick", customer: "Sara A.", rating: 5, text: "Pigmented and long-lasting, my new favorite.", status: "Approved" },
-    { id: 2, product: "Heritage Automatic Watch", customer: "James L.", rating: 5, text: "Excellent build quality, fast shipping.", status: "Pending" },
-    { id: 3, product: "Egyptian Cotton Sheets", customer: "Aisha K.", rating: 4, text: "Very soft, washes well.", status: "Approved" },
-  ];
-  return (
-    <div className="rounded-2xl border border-border bg-card p-6">
-      <h2 className="font-display text-lg font-semibold">Reviews queue</h2>
-      <div className="mt-4 divide-y divide-border">
-        {reviews.map((r) => (
-          <div key={r.id} className="flex flex-wrap items-start justify-between gap-3 py-3 text-sm">
-            <div>
-              <p className="font-medium">{r.product}</p>
-              <p className="text-xs text-muted-foreground">{r.customer} · {"★".repeat(r.rating)}</p>
-              <p className="mt-1 text-muted-foreground">"{r.text}"</p>
-            </div>
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => toast.success("Review approved")}>Approve</Button>
-              <Button size="sm" variant="ghost" onClick={() => toast.success("Review hidden")}>Hide</Button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ---------- CMS ---------- */
-function CmsView() {
-  const { cms, updateCms } = useAdmin();
-  const [form, setForm] = useState(cms);
-  return (
-    <div className="rounded-2xl border border-border bg-card p-6">
-      <h2 className="font-display text-lg font-semibold">Site content</h2>
-      <p className="text-sm text-muted-foreground">Edit the copy shown across the storefront.</p>
-      <form
-        onSubmit={(e) => { e.preventDefault(); updateCms(form); toast.success("Site content saved"); }}
-        className="mt-5 space-y-4"
-      >
-        <Field label="Hero title" value={form.heroTitle} onChange={(v) => setForm({ ...form, heroTitle: v })} />
-        <Field label="Hero subtitle" value={form.heroSubtitle} onChange={(v) => setForm({ ...form, heroSubtitle: v })} />
-        <Field label="Newsletter title" value={form.newsletterTitle} onChange={(v) => setForm({ ...form, newsletterTitle: v })} />
-        <Field label="Footer tagline" value={form.footerTagline} onChange={(v) => setForm({ ...form, footerTagline: v })} />
-        <Field label="Free shipping threshold (Rs)" type="number" value={String(form.shippingThreshold)} onChange={(v) => setForm({ ...form, shippingThreshold: Number(v) })} />
-        <div className="flex justify-end"><Button type="submit" variant="premium">Save changes</Button></div>
-      </form>
-    </div>
-  );
-}
-
-/* ---------- Blog ---------- */
-function BlogView() {
-  const { blog, addPost, updatePost, deletePost } = useAdmin();
-  const [editing, setEditing] = useState<BlogPost | null>(null);
-  const [creating, setCreating] = useState(false);
-  const [q, setQ] = useState("");
-  const filtered = blog.filter((p) => !q || p.title.toLowerCase().includes(q.toLowerCase()));
-
-  return (
-    <>
-      <ToolbarCard
-        title="Blog posts"
-        count={`${blog.length} posts`}
-        search={{ value: q, onChange: setQ, placeholder: "Search posts…" }}
-        actions={
-          <Button variant="premium" size="sm" onClick={() => setCreating(true)}>
-            <Plus className="h-4 w-4" /> New post
-          </Button>
-        }
-      />
-      <div className="grid gap-4 md:grid-cols-2">
-        {filtered.map((p) => (
-          <div key={p.id} className="overflow-hidden rounded-2xl border border-border bg-card">
-            <img src={p.cover} alt={p.title} className="h-36 w-full object-cover" />
-            <div className="space-y-2 p-4">
-              <div className="flex items-center justify-between">
-                <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
-                  p.published ? "bg-brand/10 text-brand" : "bg-secondary text-muted-foreground")}>
-                  {p.published ? "Published" : "Draft"}
-                </span>
-                <span className="text-xs text-muted-foreground">{p.date}</span>
-              </div>
-              <h3 className="font-display font-semibold leading-tight">{p.title}</h3>
-              <p className="line-clamp-2 text-sm text-muted-foreground">{p.excerpt}</p>
-              <div className="flex items-center justify-between pt-2">
-                <button
-                  onClick={() => { updatePost(p.id, { published: !p.published }); toast.success(p.published ? "Unpublished" : "Published"); }}
-                  className="text-xs font-semibold text-brand hover:underline"
-                >{p.published ? "Unpublish" : "Publish"}</button>
-                <div className="flex gap-1">
-                  <button onClick={() => setEditing(p)} className="rounded-md p-1.5 hover:bg-secondary" aria-label="Edit"><Pencil className="h-4 w-4" /></button>
-                  <button onClick={() => { if (confirm(`Delete "${p.title}"?`)) { deletePost(p.id); toast.success("Post deleted"); } }} className="rounded-md p-1.5 text-destructive hover:bg-destructive/10" aria-label="Delete"><Trash2 className="h-4 w-4" /></button>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-        {filtered.length === 0 && (
-          <div className="col-span-full rounded-2xl border border-dashed border-border bg-surface p-10 text-center text-sm text-muted-foreground">
-            No posts yet. Create your first article.
-          </div>
-        )}
-      </div>
-
-      {(creating || editing) && (
-        <BlogForm
-          initial={editing}
-          onClose={() => { setCreating(false); setEditing(null); }}
-          onSave={(data) => {
-            if (editing) { updatePost(editing.id, data); toast.success("Post updated"); }
-            else { addPost(data); toast.success("Post created"); }
-            setCreating(false); setEditing(null);
-          }}
-        />
-      )}
-    </>
-  );
-}
-
-function BlogForm({ initial, onClose, onSave }: {
-  initial: BlogPost | null; onClose: () => void; onSave: (data: Omit<BlogPost, "id">) => void;
-}) {
-  const [form, setForm] = useState<Omit<BlogPost, "id">>(
-    initial ?? {
-      slug: "", title: "", excerpt: "", content: "", cover: catFallback,
-      author: "PakOvo Editors", date: new Date().toISOString().slice(0, 10),
-      tags: [], published: true, seoTitle: "", metaDescription: "",
-    },
-  );
-  const [tagsInput, setTagsInput] = useState(form.tags.join(", "));
-
-  const handleImage = (file: File | null) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setForm((f) => ({ ...f, cover: reader.result as string }));
-    reader.readAsDataURL(file);
-  };
-
-  return (
-    <Modal title={initial ? "Edit post" : "New post"} onClose={onClose}>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!form.title.trim()) { toast.error("Title is required"); return; }
-          const slug = form.slug || form.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-          const tags = tagsInput.split(",").map((t) => t.trim()).filter(Boolean);
-          onSave({ ...form, slug, tags });
-        }}
-        className="space-y-4"
-      >
-        <div className="grid gap-4 sm:grid-cols-[140px_1fr]">
-          <div>
-            <label className="block text-xs font-medium text-muted-foreground">Cover</label>
-            <div className="mt-1 aspect-video overflow-hidden rounded-lg border border-border bg-surface">
-              <img src={form.cover} alt="" className="h-full w-full object-cover" />
-            </div>
-            <label className="mt-2 flex cursor-pointer items-center justify-center gap-1 rounded-md border border-dashed border-border py-2 text-xs hover:bg-secondary">
-              <Upload className="h-3 w-3" /> Upload
-              <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImage(e.target.files?.[0] ?? null)} />
-            </label>
-          </div>
-          <div className="space-y-3">
-            <Field label="Title" required value={form.title} onChange={(v) => setForm({ ...form, title: v })} />
-            <Field label="URL slug (auto if blank)" value={form.slug} onChange={(v) => setForm({ ...form, slug: v })} />
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Author" value={form.author} onChange={(v) => setForm({ ...form, author: v })} />
-              <Field label="Date" type="date" value={form.date} onChange={(v) => setForm({ ...form, date: v })} />
-            </div>
-            <Field label="Tags (comma separated)" value={tagsInput} onChange={setTagsInput} />
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={form.published} onChange={(e) => setForm({ ...form, published: e.target.checked })} />
-              Published
-            </label>
-          </div>
-        </div>
-
-        <label className="block">
-          <span className="mb-1 block text-xs font-medium text-muted-foreground">Excerpt</span>
-          <textarea value={form.excerpt} onChange={(e) => setForm({ ...form, excerpt: e.target.value })} rows={2}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand" />
-        </label>
-        <label className="block">
-          <span className="mb-1 block text-xs font-medium text-muted-foreground">Content (plain text — paragraphs separated by blank lines)</span>
-          <textarea value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={8}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand" />
-        </label>
-
-        <div className="space-y-3 rounded-lg border border-border bg-surface p-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">SEO</p>
-          <Field label="SEO title" value={form.seoTitle ?? ""} onChange={(v) => setForm({ ...form, seoTitle: v })} />
-          <label className="block">
-            <span className="mb-1 block text-xs font-medium text-muted-foreground">Meta description</span>
-            <textarea value={form.metaDescription ?? ""} onChange={(e) => setForm({ ...form, metaDescription: e.target.value })} rows={2} maxLength={160}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand" />
-            <span className="mt-1 block text-[10px] text-muted-foreground">{(form.metaDescription ?? "").length}/160</span>
-          </label>
-        </div>
-
-        <div className="flex justify-end gap-2 border-t border-border pt-4">
-          <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="premium">{initial ? "Save changes" : "Create post"}</Button>
-        </div>
-      </form>
-    </Modal>
-  );
-}
-
-/* ---------- Reports ---------- */
-function ReportsView() {
-  const { orders, products } = useAdmin();
-  const byStatus = orders.reduce<Record<string, number>>((a, o) => ({ ...a, [o.status]: (a[o.status] ?? 0) + 1 }), {});
-  const byCategory = products.reduce<Record<string, number>>((a, p) => ({ ...a, [p.category]: (a[p.category] ?? 0) + 1 }), {});
-  return (
-    <div className="grid gap-6 md:grid-cols-2">
-      <ReportCard title="Orders by status" data={byStatus} />
-      <ReportCard title="Products by category" data={byCategory} />
-    </div>
-  );
-}
-
-function ReportCard({ title, data }: { title: string; data: Record<string, number> }) {
-  const max = Math.max(1, ...Object.values(data));
-  return (
-    <div className="rounded-2xl border border-border bg-card p-6">
-      <h3 className="font-display font-semibold">{title}</h3>
-      <ul className="mt-4 space-y-2 text-sm">
-        {Object.entries(data).map(([k, v]) => (
-          <li key={k}>
-            <div className="flex justify-between"><span className="capitalize">{k}</span><span className="font-semibold">{v}</span></div>
-            <div className="mt-1 h-2 rounded-full bg-secondary"><div className="h-full rounded-full bg-brand" style={{ width: `${(v / max) * 100}%` }} /></div>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-/* ---------- Settings ---------- */
-function SettingsView() {
-  const { reset } = useAdmin();
-  return (
-    <div className="space-y-6">
-      <div className="rounded-2xl border border-border bg-card p-6">
-        <h2 className="font-display text-lg font-semibold">Store settings</h2>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <Field label="Store name" defaultValue="PakOvo" onChange={() => {}} value="PakOvo" />
-          <Field label="Support email" defaultValue="support@pakovo.com" onChange={() => {}} value="support@pakovo.com" />
-          <Field label="Currency" value="PKR (Rs)" onChange={() => {}} />
-          <Field label="Default tax rate (%)" type="number" value="7" onChange={() => {}} />
-        </div>
-        <Button variant="premium" className="mt-4" onClick={() => toast.success("Settings saved")}>Save</Button>
-      </div>
-      <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-6">
-        <h2 className="font-display text-lg font-semibold text-destructive">Danger zone</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Reset all admin data (products, orders, customers, banners) to the seeded defaults.</p>
-        <Button variant="outline" className="mt-4" onClick={() => { if (confirm("Reset all admin data?")) { reset(); toast.success("Admin data reset"); } }}>
-          <RefreshCw className="h-4 w-4" /> Reset admin data
-        </Button>
-      </div>
-    </div>
-  );
-}
-
 /* ---------- Shared bits ---------- */
 function Metric({ label, value, delta }: { label: string; value: string; delta?: string }) {
   return (
@@ -2329,19 +1807,6 @@ function Field({ label, value, onChange, type = "text", required, defaultValue }
         onChange={(e) => onChange(e.target.value)} required={required}
         className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
       />
-    </label>
-  );
-}
-
-function SelectField({ label, value, options, onChange }: {
-  label: string; value: string; options: { value: string; label: string }[]; onChange: (v: string) => void;
-}) {
-  return (
-    <label className="block">
-      <span className="mb-1 block text-xs font-medium text-muted-foreground">{label}</span>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:border-brand">
-        {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
     </label>
   );
 }
