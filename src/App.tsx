@@ -75,38 +75,82 @@ function renderRoute(route: RouteModule) {
   return <Component />;
 }
 
+// function PrivateRoute({ children }: { children: React.ReactNode }) {
+//   const dispatch = useDispatch();
+//   const location = useLocation();
+//   const user = useSelector(selectUser);
+//   const token = Cookies.get("accessToken") || user?.token || null;
+
+//   if (!token) {
+//     dispatch(logout());
+//     Cookies.remove("accessToken");
+//     Cookies.remove("refreshToken");
+//     toast.error("Please login to continue.");
+//     return <Navigate to="/auth/login" replace state={{ from: location }} />;
+//   }
+
+//   let decoded: JwtPayload;
+
+//   try {
+//     decoded = jwtDecode<JwtPayload>(token);
+//   } catch {
+//     dispatch(logout());
+//     Cookies.remove("accessToken");
+//     Cookies.remove("refreshToken");
+//     toast.error("Your session is invalid. Please login again.");
+//     return <Navigate to="/auth/login" replace state={{ from: location }} />;
+//   }
+
+//   const currentTime = Date.now() / 1000;
+//   if (decoded.exp < currentTime) {
+//     dispatch(logout());
+//     Cookies.remove("accessToken");
+//     Cookies.remove("refreshToken");
+//     toast.error("Session expired. Please login again.");
+//     return <Navigate to="/auth/login" replace state={{ from: location }} />;
+//   }
+
+//   return <>{children}</>;
+// }
+
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const dispatch = useDispatch();
   const location = useLocation();
   const user = useSelector(selectUser);
   const token = Cookies.get("accessToken") || user?.token || null;
 
-  if (!token) {
-    dispatch(logout());
-    Cookies.remove("accessToken");
-    Cookies.remove("refreshToken");
-    toast.error("Please login to continue.");
-    return <Navigate to="/auth/login" replace state={{ from: location }} />;
-  }
+  const getAuthStatus = (): { valid: boolean; reason?: string } => {
+    if (!token) return { valid: false, reason: "Please login to continue." };
 
-  let decoded: JwtPayload;
+    let decoded: JwtPayload;
+    try {
+      decoded = jwtDecode<JwtPayload>(token);
+    } catch {
+      return { valid: false }; // invalid token — redirect silently
+    }
 
-  try {
-    decoded = jwtDecode<JwtPayload>(token);
-  } catch {
-    dispatch(logout());
-    Cookies.remove("accessToken");
-    Cookies.remove("refreshToken");
-    toast.error("Your session is invalid. Please login again.");
-    return <Navigate to="/auth/login" replace state={{ from: location }} />;
-  }
+    const currentTime = Date.now() / 1000;
+    if (decoded.exp < currentTime) {
+      return { valid: false }; // expired — redirect silently
+    }
 
-  const currentTime = Date.now() / 1000;
-  if (decoded.exp < currentTime) {
-    dispatch(logout());
-    Cookies.remove("accessToken");
-    Cookies.remove("refreshToken");
-    toast.error("Session expired. Please login again.");
+    return { valid: true };
+  };
+
+  const { valid, reason } = getAuthStatus();
+
+  useEffect(() => {
+    if (!valid) {
+      dispatch(logout());
+      Cookies.remove("accessToken");
+      Cookies.remove("refreshToken");
+      if (reason) {
+        toast.error(reason, { id: "auth-error" });
+      }
+    }
+  }, [valid]);
+
+  if (!valid) {
     return <Navigate to="/auth/login" replace state={{ from: location }} />;
   }
 
@@ -121,26 +165,30 @@ export function App() {
       <Header />
       <main className="min-h-[60vh] pb-20 lg:pb-0">
         <Routes>
-          <Route path="/" element={renderRoute(IndexRoute)} />
-          <Route path="/search" element={renderRoute(SearchRoute)} />
-          <Route path="/cart" element={renderRoute(CartRoute)} />
-          <Route path="/wishlist" element={renderRoute(WishlistRoute)} />
+
+          <Route path="/" element={<PrivateRoute>{renderRoute(IndexRoute)}</PrivateRoute>} />
+          <Route path="/search" element={<PrivateRoute>{renderRoute(SearchRoute)}</PrivateRoute>} />
+          <Route path="/cart" element={<PrivateRoute>{renderRoute(CartRoute)}</PrivateRoute>} />
+          <Route path="/wishlist" element={<PrivateRoute>{renderRoute(WishlistRoute)}</PrivateRoute>} />
           <Route path="/shop" element={<PrivateRoute>{renderRoute(ShopRoute)}</PrivateRoute>} />
           <Route path="/checkout" element={<PrivateRoute>{renderRoute(CheckoutRoute)}</PrivateRoute>} />
           <Route path="/track" element={<PrivateRoute>{renderRoute(TrackRoute)}</PrivateRoute>} />
           <Route path="/order-details/:id" element={<PrivateRoute>{renderRoute(OrderDetailRoute)}</PrivateRoute>} />
           <Route path="/account" element={<PrivateRoute>{renderRoute(AccountRoute)}</PrivateRoute>} />
+          <Route path="/blog" element={<PrivateRoute>{renderRoute(BlogRoute)}</PrivateRoute>} />
+          <Route path="/blog/:slug" element={<PrivateRoute>{renderRoute(BlogSlugRoute)}</PrivateRoute>} />
+          <Route path="/collections/:slug" element={<PrivateRoute>{renderRoute(CollectionsSlugRoute)}</PrivateRoute>} />
+          <Route path="/collections/:slug/:subCategory" element={<PrivateRoute>{renderRoute(CollectionsSlugSubCategoryRoute)}</PrivateRoute>} />
+          <Route path="/products/:slug" element={<PrivateRoute>{renderRoute(ProductSlugRoute)}</PrivateRoute>} />
+
           <Route path="/admin" element={renderRoute(AdminRoute)} />
-          <Route path="/blog" element={renderRoute(BlogRoute)} />
-          <Route path="/blog/:slug" element={renderRoute(BlogSlugRoute)} />
           <Route path="/auth/login" element={renderRoute(LoginRoute)} />
           <Route path="/auth/forget-password" element={renderRoute(ForgetPasswordRoute)} />
           <Route path="/auth/verify-otp" element={renderRoute(VerifyOtpRoute)} />
           <Route path="/auth/reset-password" element={renderRoute(ResetPasswordRoute)} />
           <Route path="/auth/register" element={renderRoute(RegisterRoute)} />
-          <Route path="/collections/:slug" element={renderRoute(CollectionsSlugRoute)} />
-          <Route path="/collections/:slug/:subCategory" element={renderRoute(CollectionsSlugSubCategoryRoute)} />
-          <Route path="/products/:slug" element={renderRoute(ProductSlugRoute)} />
+
+
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>

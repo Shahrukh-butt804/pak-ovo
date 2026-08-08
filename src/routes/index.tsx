@@ -237,7 +237,7 @@ function CategoryGrid() {
         {categories.map((c, i) => (
           <Link
             key={c.slug}
-            to="/collections/$slug"
+            to="/shop"
             params={{ slug: c.slug }}
             className="group relative overflow-hidden rounded-2xl bg-surface aspect-4/5"
           >
@@ -312,7 +312,7 @@ function BeautyBanner() {
   return (
     <section className="container-px mx-auto max-w-7xl py-16">
       <Link
-        to="/collections/$slug"
+        to="/shop"
         params={{ slug: "perfumes" }}
         className="relative block overflow-hidden rounded-3xl"
       >
@@ -410,7 +410,7 @@ function HomeBanner() {
           </div>
         </Link>
         <Link
-          to="/collections/$slug"
+          to="/shop"
           params={{ slug: "curtains" }}
           className="relative block overflow-hidden rounded-3xl"
         >
