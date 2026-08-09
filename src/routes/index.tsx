@@ -9,7 +9,7 @@ import hero from "@/assets/hero-1.jpg";
 import { ProductRow } from "@/components/product/ProductCard";
 import { Button } from "@/components/ui/button";
 import { categories } from "@/data/categories";
-import { onSale, Product } from "@/data/products";
+import { Product } from "@/data/products";
 import { formatPrice } from "@/lib/format";
 import { createFileRoute, Link } from "@/lib/router-compat";
 import { cn } from "@/lib/utils";
@@ -265,7 +265,7 @@ function CategoryGrid() {
 }
 
 function NewArrivalsSection() {
-  const { data, isLoading } = useGetAllProductsQuery(
+  const { data, isLoading , refetch} = useGetAllProductsQuery(
     {
       page: 1,
       limit: 8,
@@ -296,7 +296,7 @@ function NewArrivalsSection() {
           ))}
         </div>
       ) : (
-        <ProductRow products={items || []} isFromDB={true} />
+        <ProductRow products={items || []} refetch={refetch} isFromDB={true} />
       )}
     </section>
   );
@@ -346,7 +346,7 @@ function BeautyBanner() {
 }
 
 function BestSellersSection() {
-  const { data, isLoading } = useGetAllProductsQuery(
+  const { data, isLoading ,refetch} = useGetAllProductsQuery(
     {
       page: 1,
       limit: 8,
@@ -378,7 +378,7 @@ function BestSellersSection() {
             ))}
           </div>
         ) : (
-          <ProductRow products={items || []} isFromDB={true} />
+          <ProductRow products={items || []} refetch={refetch} isFromDB={true} />
         )}
       </div>
     </section>

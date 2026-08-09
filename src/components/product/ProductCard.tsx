@@ -139,12 +139,12 @@ export function ProductGrid({ products, refetch ,isFromDB = true }: { products: 
   );
 }
 
-export function ProductRow({ products, isFromDB = true }: { products: Product[]; isFromDB?: any }) {
+export function ProductRow({ products,refetch, isFromDB = true }: { products: Product[] , refetch?: any, isFromDB?: any }) {
   return (
     <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scroll-px-4 lg:grid lg:grid-cols-4 lg:gap-6 lg:overflow-visible">
       {products.map((p) => (
         <div key={p.id} className="w-[70%] shrink-0 snap-start sm:w-[45%] md:w-[35%] lg:w-auto">
-          <ProductCard product={p} isFromDB={isFromDB} />
+          <ProductCard product={p} refetch={refetch} isFromDB={isFromDB} />
         </div>
       ))}
     </div>
