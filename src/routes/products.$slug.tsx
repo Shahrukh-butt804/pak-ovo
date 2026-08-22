@@ -99,7 +99,7 @@ function ProductPage() {
           >
             <img
               src={UPLOADS_URL + gallery[activeImg]}
-              alt={product.name}
+              alt={product?.name || "image"}
               // crossOrigin="anonymous"
               className="h-full w-full object-cover transition-transform duration-200"
               style={
@@ -165,7 +165,8 @@ function ProductPage() {
               </>
             )}
           </div>
-          <p className="mt-5 leading-relaxed text-muted-foreground">{product.description}</p>
+          <div dangerouslySetInnerHTML={{ __html: product.description || "" }} />
+          {/* <p className="mt-5 leading-relaxed text-muted-foreground">{product.description}</p> */}
           {/* 
           {product.variants?.map((v: { name: string; options: string[] }) => (
             <div key={v.name} className="mt-6">
