@@ -108,7 +108,7 @@ const Table = ({
                     {columns.map((col) =>
                       col === "category" || col === "subCategory" ? (
                         <td key={col} className="max-w-xs px-4 py-3">
-                          {row[col].name}
+                          {row[col]?.name || "N/A"}
                         </td>
                       ) : (
                         <td key={col} className="max-w-xs px-4 py-3 ">

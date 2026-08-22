@@ -280,22 +280,12 @@ function Shop() {
 
 export function normalizeProduct(item: any, index: number, fallbackCategory: string): any {
   const name = String(item.name ?? item.title ?? "Untitled product");
-  const categoryName =
-    typeof item.category === "string"
-      ? item.category
-      : (item.category?.name ?? item.category?.slug ?? fallbackCategory);
+  const categoryName = item?.category?.name || "N/A"
   const category = String(categoryName);
-  const discounted = item.discountedPrice != null;
-  const price = Number(
-    item.discountedPrice ?? item.price ?? item.salePrice ?? item.originalPrice ?? 0,
-  );
-  const compareAt = discounted
-    ? Number(item.price ?? item.compareAt ?? 0)
-    : item.compareAt
-      ? Number(item.compareAt)
-      : undefined;
-
-  const subCategory = item.subCategory.name ?? "N/A";
+  const discounted = item?.discountedPrice != null;
+  const price = Number( item.discountedPrice ?? item.price ?? item.salePrice ?? item.originalPrice ?? 0);
+  const compareAt = discounted ? Number(item.price ?? item.compareAt ?? 0) : item.compareAt ? Number(item.compareAt) : undefined;
+  const subCategory = item?.subCategory?.name || "N/A";
 
   return {
     id: String(item._id ?? item.id ?? `${category}-${index + 1}`),

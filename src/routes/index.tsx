@@ -243,7 +243,7 @@ function CategoryGrid() {
           >
             <img
               src={c.image}
-              alt={c.name}
+              alt={c?.name || "N/A"}
               loading="lazy"
               className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
             />
@@ -252,9 +252,9 @@ function CategoryGrid() {
               <p className="text-xs font-medium uppercase tracking-[0.2em] text-gold">
                 {c.tagline}
               </p>
-              <h3 className="mt-1 font-display text-xl font-bold md:text-2xl">{c.name}</h3>
+              <h3 className="mt-1 font-display text-xl font-bold md:text-2xl">{c?.name || "N/A"}</h3>
               <p className="mt-3 inline-flex items-center gap-1 text-sm font-semibold opacity-90 group-hover:gap-2 transition-all">
-                Shop {c.name} <ArrowRight className="h-4 w-4" />
+                Shop {c?.name || "N/A"} <ArrowRight className="h-4 w-4" />
               </p>
             </div>
           </Link>
@@ -505,13 +505,13 @@ function FlashSale() {
                 <div className="aspect-4/5 overflow-hidden rounded-xl bg-surface">
                   <img
                     src={UPLOADS_URL + p.image}
-                    alt={p.name}
+                    alt={p?.name || "image"}
                     // crossOrigin="anonymous"
                     loading="lazy"
                     className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                 </div>
-                <p className="mt-3 text-sm font-medium line-clamp-2">{p.name}</p>
+                <p className="mt-3 text-sm font-medium line-clamp-2">{p?.name || "N/A"}</p>
                 <div className="mt-1 flex items-baseline gap-2">
                   <span className="font-semibold text-gold">{formatPrice(p.price)}</span>
                   {p.compareAt && (
