@@ -7,9 +7,7 @@ import { UPLOADS_URL } from "@/constants/api";
 import {
   parseCsv,
   productCsvTemplate,
-  useAdmin,
   validateProductRows,
-  type AdminOrder,
   type AdminProduct,
 } from "@/lib/admin-store";
 import { formatPrice } from "@/lib/format";
@@ -195,7 +193,8 @@ function Admin() {
         <div className="flex items-center gap-3">
           {user && (
             <span className="hidden text-xs text-muted-foreground sm:inline">
-              {user.name} · <span className="uppercase tracking-wider text-brand">{user.role}</span>
+              {user?.fullName ? user.fullName.toUpperCase() : ""} ·{" "}
+              <span className="uppercase tracking-wider text-brand">{user.role}</span>
             </span>
           )}
           <button
@@ -350,7 +349,6 @@ function Dashboard() {
 
 /* ---------- Products ---------- */
 function ProductsView() {
-  const { products, addProduct, updateProduct, bulkAddProducts } = useAdmin();
   const [editing, setEditing] = useState<AdminProduct | null>(null);
   const [creating, setCreating] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -371,7 +369,7 @@ function ProductsView() {
   const exportCsv = () => {
     const headers = [
       "id",
-      "name",
+      "title",
       "category",
       "subcategory",
       "price",
@@ -381,24 +379,39 @@ function ProductsView() {
       "reviews",
       "active",
     ];
-    const rows = products.map((p) =>
+
+    const escapeCsv = (value: any) => {
+      if (value === null || value === undefined) return "";
+      const stringValue = String(value);
+      // Escape quotes and wrap values containing commas, quotes, or newlines
+      if (stringValue.includes(",") || stringValue.includes('"') || stringValue.includes("\n")) {
+        return `"${stringValue.replace(/"/g, '""')}"`;
+      }
+      return stringValue;
+    };
+
+    const rows = (data?.docs ?? []).map((product: any) =>
       [
-        p.id,
-        p.name,
-        p.category,
-        p.subcategory,
-        p.price,
-        p.compareAt ?? "",
-        p.stock,
-        p.rating,
-        p.reviews,
-        p.active,
+        product._id,
+        product.title,
+        product.category,
+        product.subcategory,
+        product.price,
+        product.compareAt,
+        product.stock,
+        product.rating,
+        product.reviews,
+        product.active,
       ]
-        .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+        .map(escapeCsv)
         .join(","),
     );
-    download("products.csv", "text/csv", [headers.join(","), ...rows].join("\n"));
-    toast.success(`Exported ${products.length} products to CSV`);
+
+    const csv = [headers.join(","), ...rows].join("\n");
+
+    download("products.csv", "text/csv", csv);
+
+    toast.success(`Exported ${rows.length} products to CSV`);
   };
 
   const handleDelete = async (productId: any) => {
@@ -487,18 +500,18 @@ function ProductsView() {
             setCreating(false);
             setEditing(null);
           }}
-          onSave={(data: any) => {
-            if (editing) {
-              updateProduct(editing.id, data);
-              toast.success("Product updated");
-            } else {
-              addProduct(data);
-              toast.success("Product created");
-            }
-            setCreating(false);
-            setEditing(null);
-            refetch();
-          }}
+          // onSave={(data: any) => {
+          //   if (editing) {
+          //     updateProduct(editing.id, data);
+          //     toast.success("Product updated");
+          //   } else {
+          //     addProduct(data);
+          //     toast.success("Product created");
+          //   }
+          //   setCreating(false);
+          //   setEditing(null);
+          //   refetch();
+          // }}
         />
       )}
 
@@ -506,9 +519,9 @@ function ProductsView() {
         <BulkImport
           onClose={() => setImportOpen(false)}
           onImport={(rows) => {
-            const n = bulkAddProducts(rows);
-            toast.success(`Imported ${n} products`);
-            setImportOpen(false);
+            // const n = bulkAddProducts(rows);
+            // toast.success(`Imported ${n} products`);
+            // setImportOpen(false);
           }}
         />
       )}
@@ -1682,7 +1695,7 @@ function RoutesView() {
               const assigned = draftAssignments[manager._id] || [];
               return (
                 <tr key={manager._id}>
-                  <td className="p-3 font-medium">{manager.fullName || manager.name}</td>
+                  <td className="p-3 font-medium">{manager.fullName || ""}</td>
                   <td className="p-3 text-muted-foreground">{manager.email}</td>
                   <td className="p-3">
                     <div className="flex flex-wrap gap-2">
