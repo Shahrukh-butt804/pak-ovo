@@ -16,6 +16,8 @@ import { useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { useParams } from "react-router-dom";
 import { toast } from "sonner";
+import { normalizeProduct as exportedNormalizeProduct} from "../routes/shop.tsx"
+
 
 export const Route = createFileRoute("/products/$slug")({
   notFoundComponent: () => (
@@ -54,7 +56,7 @@ function ProductPage() {
 
   const items = useMemo(() => {
     const docs: Product[] = (data?.docs ?? []).map((item: any, index: number) =>
-      normalizeProduct(item),
+      exportedNormalizeProduct(item, index, "uncategorized"),
     );
 
     let list: Product[] = docs.map((product: Product) => ({
