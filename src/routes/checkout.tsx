@@ -21,9 +21,9 @@ export const Route = createFileRoute("/checkout")({
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^\+?[0-9\s-]{7,15}$/;
-const CARD_NUMBER_REGEX = /^\d{4}\s?\d{4}\s?\d{4}\s?\d{4}$/;
-const EXPIRY_REGEX = /^(0[1-9]|1[0-2])\/\d{2}$/;
-const CVC_REGEX = /^\d{3,4}$/;
+// const CARD_NUMBER_REGEX = /^\d{4}\s?\d{4}\s?\d{4}\s?\d{4}$/;
+// const EXPIRY_REGEX = /^(0[1-9]|1[0-2])\/\d{2}$/;
+// const CVC_REGEX = /^\d{3,4}$/;
 const POSTAL_CODE_REGEX = /^[A-Za-z0-9\s-]{3,10}$/;
 
 const validateForm = (data: {
@@ -50,10 +50,10 @@ const validateForm = (data: {
   const city = get(data.city);
   const zipCode = get(data.zipCode);
   const country = get(data.country);
-  const cardNumber = get(data.cardNumber);
-  const expiry = get(data.expiry);
-  const cvc = get(data.cvc);
-  const nameOnCard = get(data.nameOnCard);
+  // const cardNumber = get(data.cardNumber);
+  // const expiry = get(data.expiry);
+  // const cvc = get(data.cvc);
+  // const nameOnCard = get(data.nameOnCard);
 
   if (!email) return "Email is required";
   if (!EMAIL_REGEX.test(email)) return "Enter a valid email address";
@@ -68,19 +68,18 @@ const validateForm = (data: {
 
   if (!zipCode) return "Postal code is required";
   if (!POSTAL_CODE_REGEX.test(zipCode)) return "Enter a valid postal code";
-
   if (!country) return "Country is required";
 
-  if (!cardNumber) return "Card number is required";
-  if (!CARD_NUMBER_REGEX.test(cardNumber)) return "Enter a valid 16-digit card number";
 
-  if (!expiry) return "Expiry date is required";
-  if (!EXPIRY_REGEX.test(expiry)) return "Expiry must be in MM/YY format";
+  // if (!cardNumber) return "Card number is required";
+  // if (!CARD_NUMBER_REGEX.test(cardNumber)) return "Enter a valid 16-digit card number";
+  // if (!expiry) return "Expiry date is required";
+  // if (!EXPIRY_REGEX.test(expiry)) return "Expiry must be in MM/YY format";
+  // if (!cvc) return "CVC is required";
+  // if (!CVC_REGEX.test(cvc)) return "Enter a valid CVC";
+  // if (!nameOnCard) return "Name on card is required";
 
-  if (!cvc) return "CVC is required";
-  if (!CVC_REGEX.test(cvc)) return "Enter a valid CVC";
 
-  if (!nameOnCard) return "Name on card is required";
 
   return null; // all valid
 };
@@ -129,21 +128,22 @@ function Checkout() {
         zipCode: fields.zipCode,
         country: fields.country,
       },
-      payment: {
-        cardNumber: fields.cardNumber,
-        expiry: fields.expiry,
-        cvc: fields.cvc,
-        nameOnCard: fields.nameOnCard,
-      },
+      // payment: {
+      //   cardNumber: fields.cardNumber,
+      //   expiry: fields.expiry,
+      //   cvc: fields.cvc,
+      //   nameOnCard: fields.nameOnCard,
+      // },
     };
 
     const res: any = await createOrder(payload);
 
-    if (!res?.data?.success) {
-      toast.error(res.error?.data?.message || "something went wrong");
-      return;
+    if (res?.data?.success) {
+      toast.error(res.data?.message || "something went wrong");
+    }else{
+      toast.error(res.error?.data?.message || res.error?.data?.errors[0]?.msg || "something went wrong");
+      return
     }
-
     clear();
     setDone(true);
   };
@@ -197,8 +197,8 @@ function Checkout() {
         <Step icon={ShoppingBag} label="Cart" done />
         <Divider />
         <Step icon={Truck} label="Shipping" active />
-        <Divider />
-        <Step icon={CreditCard} label="Payment" active />
+        {/* <Divider />
+        <Step icon={CreditCard} label="Payment" active /> */}
         <Divider />
         <Step icon={CheckCircle2} label="Confirm" />
       </ol>
@@ -225,7 +225,7 @@ function Checkout() {
               />
             </div>
           </Block>
-          <Block title="Payment">
+          {/* <Block title="Payment">
             <Input
               label="Card number"
               name="cardNumber"
@@ -237,7 +237,7 @@ function Checkout() {
               <Input label="CVC" name="cvc" required placeholder="123" />
             </div>
             <Input label="Name on card" name="nameOnCard" required />
-          </Block>
+          </Block> */}
           <Button
             variant="hero"
             size="xl"
