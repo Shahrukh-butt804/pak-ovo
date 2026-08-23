@@ -3,12 +3,14 @@ import { type Product } from "@/data/products";
 import { formatPrice } from "@/lib/format";
 import { Link } from "@/lib/router-compat";
 import { cn } from "@/lib/utils";
+import { selectUser } from "@/redux/reducers/userSlice";
 import { useAddToCartMutation } from "@/redux/services/cartSlice";
 import {
   useAddProductToWishlistMutation,
   useDeleteFromWishlistMutation,
 } from "@/redux/services/wishlistSlice";
 import { Heart, ShoppingBag, Star } from "lucide-react";
+import { useSelector } from "react-redux";
 import { toast } from "sonner";
 
 export function ProductCard({
@@ -20,6 +22,7 @@ export function ProductCard({
   refetch?: any;
   isFromDB?: any;
 }) {
+  const username = useSelector(selectUser)?.fullName;
   const [addToWishlist, { isLoading: isAddingToWishlist }] = useAddProductToWishlistMutation();
   const [deleteToWishlist, { isLoading: isdeleteingToWishlist }] = useDeleteFromWishlistMutation();
   const wished = product.wished ?? false;
@@ -79,25 +82,30 @@ export function ProductCard({
             {product.badge}
           </span>
         )}
-        <button
-          onClick={handleAddToWishlist}
-          disabled={isAddingToWishlist || isdeleteingToWishlist}
-          aria-label="Add to wishlist"
-          className={cn(
-            "absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-background/90 backdrop-blur transition-all hover:scale-110",
-            wished && "text-destructive",
-          )}
-        >
-          <Heart className={cn("h-4 w-4", wished && "fill-current")} />
-        </button>
-        <button
-          disabled={isAddingToCart}
-          onClick={handleAddToCart}
-          className="absolute inset-x-3 bottom-3 flex translate-y-2 items-center justify-center gap-2 rounded-full bg-navy py-2.5 text-xs font-semibold text-navy-foreground opacity-0 transition-all duration-300 hover:bg-brand group-hover:translate-y-0 group-hover:opacity-100"
-        >
-          <ShoppingBag className="h-4 w-4" />
-          Quick add
-        </button>
+
+        {username && (
+          <>
+            <button
+              onClick={handleAddToWishlist}
+              disabled={isAddingToWishlist || isdeleteingToWishlist}
+              aria-label="Add to wishlist"
+              className={cn(
+                "absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-background/90 backdrop-blur transition-all hover:scale-110",
+                wished && "text-destructive",
+              )}
+            >
+              <Heart className={cn("h-4 w-4", wished && "fill-current")} />
+            </button>
+            <button
+              disabled={isAddingToCart}
+              onClick={handleAddToCart}
+              className="absolute inset-x-3 bottom-3 flex translate-y-2 items-center justify-center gap-2 rounded-full bg-navy py-2.5 text-xs font-semibold text-navy-foreground opacity-0 transition-all duration-300 hover:bg-brand group-hover:translate-y-0 group-hover:opacity-100"
+            >
+              <ShoppingBag className="h-4 w-4" />
+              Quick add
+            </button>
+          </>
+        )}
       </Link>
       <div className="mt-3 px-1">
         <p className="text-xs uppercase tracking-wider text-muted-foreground">
@@ -129,7 +137,15 @@ export function ProductCard({
   );
 }
 
-export function ProductGrid({ products, refetch ,isFromDB = true }: { products: Product[]; refetch?: any ,isFromDB?: any }) {
+export function ProductGrid({
+  products,
+  refetch,
+  isFromDB = true,
+}: {
+  products: Product[];
+  refetch?: any;
+  isFromDB?: any;
+}) {
   return (
     <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">
       {products.map((p) => (
@@ -139,7 +155,15 @@ export function ProductGrid({ products, refetch ,isFromDB = true }: { products: 
   );
 }
 
-export function ProductRow({ products,refetch, isFromDB = true }: { products: Product[] , refetch?: any, isFromDB?: any }) {
+export function ProductRow({
+  products,
+  refetch,
+  isFromDB = true,
+}: {
+  products: Product[];
+  refetch?: any;
+  isFromDB?: any;
+}) {
   return (
     <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scroll-px-4 lg:grid lg:grid-cols-4 lg:gap-6 lg:overflow-visible">
       {products.map((p) => (

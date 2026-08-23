@@ -9,8 +9,6 @@ import { Toaster } from "@/components/ui/sonner";
 
 import { Route as IndexRoute } from "@/routes/index";
 import { Route as ShopRoute } from "@/routes/shop";
-import { Route as SearchRoute } from "@/routes/search";
-import { Route as CartRoute } from "@/routes/cart";
 import { Route as WishlistRoute } from "@/routes/wishlist";
 import { Route as CheckoutRoute } from "@/routes/checkout";
 import { Route as TrackRoute } from "@/routes/track";
@@ -151,7 +149,7 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
   }, [valid]);
 
   if (!valid) {
-    return <Navigate to="/auth/login" replace state={{ from: location }} />;
+    return <Navigate to="/" replace state={{ from: location }} />;
   }
 
   return <>{children}</>;
@@ -166,20 +164,21 @@ export function App() {
       <main className="min-h-[60vh] pb-20 lg:pb-0">
         <Routes>
 
-          <Route path="/" element={<PrivateRoute>{renderRoute(IndexRoute)}</PrivateRoute>} />
-          <Route path="/search" element={<PrivateRoute>{renderRoute(SearchRoute)}</PrivateRoute>} />
-          <Route path="/cart" element={<PrivateRoute>{renderRoute(CartRoute)}</PrivateRoute>} />
+          <Route path="/" element={renderRoute(IndexRoute)} />
+          <Route path="/shop" element={renderRoute(ShopRoute)} />
+          <Route path="/products/:slug" element={renderRoute(ProductSlugRoute)} />
+          <Route path="/blog" element={renderRoute(BlogRoute)} />
+          <Route path="/blog/:slug" element={renderRoute(BlogSlugRoute)} />
+          <Route path="/collections/:slug" element={renderRoute(CollectionsSlugRoute)} />
+          <Route path="/collections/:slug/:subCategory" element={renderRoute(CollectionsSlugSubCategoryRoute)} />
+
+          {/*  PRIVATE ROUTES  */}
           <Route path="/wishlist" element={<PrivateRoute>{renderRoute(WishlistRoute)}</PrivateRoute>} />
-          <Route path="/shop" element={<PrivateRoute>{renderRoute(ShopRoute)}</PrivateRoute>} />
           <Route path="/checkout" element={<PrivateRoute>{renderRoute(CheckoutRoute)}</PrivateRoute>} />
           <Route path="/track" element={<PrivateRoute>{renderRoute(TrackRoute)}</PrivateRoute>} />
           <Route path="/order-details/:id" element={<PrivateRoute>{renderRoute(OrderDetailRoute)}</PrivateRoute>} />
           <Route path="/account" element={<PrivateRoute>{renderRoute(AccountRoute)}</PrivateRoute>} />
-          <Route path="/blog" element={<PrivateRoute>{renderRoute(BlogRoute)}</PrivateRoute>} />
-          <Route path="/blog/:slug" element={<PrivateRoute>{renderRoute(BlogSlugRoute)}</PrivateRoute>} />
-          <Route path="/collections/:slug" element={<PrivateRoute>{renderRoute(CollectionsSlugRoute)}</PrivateRoute>} />
-          <Route path="/collections/:slug/:subCategory" element={<PrivateRoute>{renderRoute(CollectionsSlugSubCategoryRoute)}</PrivateRoute>} />
-          <Route path="/products/:slug" element={<PrivateRoute>{renderRoute(ProductSlugRoute)}</PrivateRoute>} />
+
 
           <Route path="/admin" element={renderRoute(AdminRoute)} />
           <Route path="/auth/login" element={renderRoute(LoginRoute)} />
@@ -188,8 +187,8 @@ export function App() {
           <Route path="/auth/reset-password" element={renderRoute(ResetPasswordRoute)} />
           <Route path="/auth/register" element={renderRoute(RegisterRoute)} />
 
-
           <Route path="*" element={<NotFound />} />
+
         </Routes>
       </main>
       <Footer />

@@ -1,14 +1,19 @@
+import { ProductRow } from "@/components/product/ProductCard";
+import Spinner from "@/components/spinner";
 import { Accordion } from "@/components/ui/accordionForTextEditor";
 import { Button } from "@/components/ui/button";
 import { UPLOADS_URL } from "@/constants/api";
+import { Product } from "@/data/products";
 import { formatPrice } from "@/lib/format";
 import { createFileRoute, Link, useNavigate } from "@/lib/router-compat";
 import { cn } from "@/lib/utils";
 import { useWishlist } from "@/lib/wishlist-store";
+import { selectUser } from "@/redux/reducers/userSlice";
 import { useAddToCartMutation } from "@/redux/services/cartSlice";
-import { useGetProductBySlugQuery } from "@/redux/services/productSlice";
+import { useGetAllProductsQuery, useGetProductBySlugQuery } from "@/redux/services/productSlice";
 import { Heart, Minus, Plus, RotateCcw, ShieldCheck, ShoppingBag, Star, Truck } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useSelector } from "react-redux";
 import { useParams } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -26,13 +31,38 @@ export const Route = createFileRoute("/products/$slug")({
 
 function ProductPage() {
   const params = useParams();
+  const username = useSelector(selectUser)?.fullName;
+
   const { slug } = params;
   const { data: productResponse, isLoading } = useGetProductBySlugQuery(slug, {
     skip: !slug,
     refetchOnMountOrArgChange: true,
   });
 
+
   const product = useMemo(() => normalizeProduct(productResponse), [productResponse]);
+
+  
+  const { data, isLoading: isSameProductsLoading, refetch} = useGetAllProductsQuery(
+    {
+      page: 1,
+      limit: 4,
+      category: product?.categorySlug || undefined,
+    },
+    { skip : !product?.categorySlug , refetchOnMountOrArgChange: true },
+  );
+
+  const items = useMemo(() => {
+    const docs: Product[] = (data?.docs ?? []).map((item: any, index: number) =>
+      normalizeProduct(item),
+    );
+
+    let list: Product[] = docs.map((product: Product) => ({
+      ...product,
+    }));
+
+    return list;
+  }, [data?.docs]);
 
   const navigate = useNavigate();
   const toggleWish = useWishlist((s) => s.toggle);
@@ -54,13 +84,10 @@ function ProductPage() {
     }
   };
 
-  if (isLoading && !productResponse) {
+  if (isLoading || isSameProductsLoading) {
     return (
-      <div className="container-px mx-auto max-w-7xl py-24 text-center">
-        <h1 className="font-display text-2xl font-bold">Loading product…</h1>
-        <p className="mt-3 text-sm text-muted-foreground">
-          Please wait while we fetch the product details.
-        </p>
+      <div className="grid place-content-center mt-10">
+        <Spinner size="lg" />
       </div>
     );
   }
@@ -192,53 +219,71 @@ function ProductPage() {
             </div>
           ))} */}
 
-          <div className="mt-8 flex gap-3">
-            <div className="flex items-center rounded-full border border-border">
-              <button
-                onClick={() => setQty(Math.max(1, qty - 1))}
-                className="p-3 hover:bg-secondary rounded-l-full"
-                aria-label="Decrease"
+          {username ? (
+            <>
+              <div className="mt-8 flex gap-3">
+                <div className="flex items-center rounded-full border border-border">
+                  <button
+                    onClick={() => setQty(Math.max(1, qty - 1))}
+                    className="p-3 hover:bg-secondary rounded-l-full"
+                    aria-label="Decrease"
+                  >
+                    <Minus className="h-4 w-4" />
+                  </button>
+                  <span className="w-10 text-center text-sm font-semibold">{qty}</span>
+                  <button
+                    onClick={() => setQty(qty + 1)}
+                    className="p-3 hover:bg-secondary rounded-r-full"
+                    aria-label="Increase"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <Button
+                  disabled={isAddingToCart}
+                  variant="hero"
+                  size="lg"
+                  className="flex-1"
+                  onClick={doAdd}
+                >
+                  <ShoppingBag className="h-4 w-4" /> Add to bag
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => toggleWish(product?._id)}
+                  aria-label="Wishlist"
+                >
+                  <Heart className={cn("h-4 w-4", wished && "fill-destructive text-destructive")} />
+                </Button>
+              </div>
+              <Button
+                variant="premium"
+                size="lg"
+                className="mt-3 w-full"
+                onClick={() => {
+                  doAdd();
+                  navigate({ to: "/checkout" });
+                }}
               >
-                <Minus className="h-4 w-4" />
-              </button>
-              <span className="w-10 text-center text-sm font-semibold">{qty}</span>
-              <button
-                onClick={() => setQty(qty + 1)}
-                className="p-3 hover:bg-secondary rounded-r-full"
-                aria-label="Increase"
+                Buy it now
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="premium"
+                size="lg"
+                className="mt-3 w-full"
+                onClick={() => {
+                  navigate({ to: "/auth/login" });
+                }}
               >
-                <Plus className="h-4 w-4" />
-              </button>
-            </div>
-            <Button
-              disabled={isAddingToCart}
-              variant="hero"
-              size="lg"
-              className="flex-1"
-              onClick={doAdd}
-            >
-              <ShoppingBag className="h-4 w-4" /> Add to bag
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={() => toggleWish(product?._id)}
-              aria-label="Wishlist"
-            >
-              <Heart className={cn("h-4 w-4", wished && "fill-destructive text-destructive")} />
-            </Button>
-          </div>
-          <Button
-            variant="premium"
-            size="lg"
-            className="mt-3 w-full"
-            onClick={() => {
-              doAdd();
-              navigate({ to: "/checkout" });
-            }}
-          >
-            Buy it now
-          </Button>
+                Sign in to continue shopping
+              </Button>
+            </>
+          )}
 
           <div className="mt-8 grid gap-3 rounded-2xl border border-border bg-surface p-5 text-sm">
             <div className="flex items-center gap-3">
@@ -324,7 +369,7 @@ function ProductPage() {
                   title: "FAQs",
                   content: product.faqs,
                 },
-               ]}
+              ]}
             />
           </div>
         </div>
@@ -332,10 +377,18 @@ function ProductPage() {
 
       <section className="container-px mx-auto max-w-7xl py-16">
         <h2 className="mb-8 font-display text-2xl font-bold md:text-3xl">You may also like</h2>
-        {/* <ProductGrid products={related || []} /> */}
+        {isLoading ? (
+          <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div key={index} className="h-72 animate-pulse rounded-2xl bg-muted" />
+            ))}
+          </div>
+        ) : (
+          <ProductRow products={items || []} refetch={refetch} isFromDB={true} />
+        )}
       </section>
 
-      <div className="fixed inset-x-0 bottom-16 z-30 border-t border-border bg-background/95 p-3 backdrop-blur lg:hidden">
+      {/* <div className="fixed inset-x-0 bottom-16 z-30 border-t border-border bg-background/95 p-3 backdrop-blur lg:hidden">
         <div className="flex items-center gap-3">
           <div className="flex-1">
             <p className="text-xs text-muted-foreground line-clamp-1">{product?.name}</p>
@@ -345,14 +398,14 @@ function ProductPage() {
             <ShoppingBag className="h-4 w-4" /> Add
           </Button>
         </div>
-      </div>
+      </div> */}
     </>
   );
 }
 
 type ProductApiResponse = {
   _id?: string;
-  category?: { _id?: string; name?: string };
+  category?: { _id?: string; name?: string ,slug ? :string};
   title?: string;
   description?: string;
   slug?: string;
@@ -373,7 +426,6 @@ type ProductApiResponse = {
   ingredients?: string;
   additionalInformation?: string;
   faqs?: string;
-
 };
 
 function normalizeProduct(product?: ProductApiResponse) {
@@ -390,6 +442,7 @@ function normalizeProduct(product?: ProductApiResponse) {
       reviews: 0,
       image: "",
       category: "General",
+      categorySlug: "",
       subcategory: "General",
       badge: undefined,
       inStock: true,
@@ -400,7 +453,7 @@ function normalizeProduct(product?: ProductApiResponse) {
       howToUse: "",
       ingredients: "",
       additionalInformation: "",
-      faqs: ""
+      faqs: "",
     };
   }
 
@@ -418,6 +471,7 @@ function normalizeProduct(product?: ProductApiResponse) {
     reviews: Number(product.reviews ?? 0),
     image: product.image ? `${product.image}` : "",
     category: product.category?.name ?? "General",
+    categorySlug: product.category?.slug ?? "",
     subcategory: product.subcategory ?? product.category?.name ?? "General",
     badge: product.badge,
     inStock: product.inStock ?? true,
@@ -428,7 +482,6 @@ function normalizeProduct(product?: ProductApiResponse) {
     howToUse: product.howToUse ?? "",
     ingredients: product.ingredients ?? "",
     additionalInformation: product.additionalInformation ?? "",
-    faqs: product.faqs ?? ""
-
+    faqs: product.faqs ?? "",
   };
 }

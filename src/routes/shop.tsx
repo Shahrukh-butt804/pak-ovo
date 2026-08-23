@@ -50,10 +50,10 @@ function Shop() {
     {
       page: currentPage,
       limit: 8,
-      keyword: keyword || undefined,
+      keyword: searchInput || undefined,
       category: categorySlug || undefined,
       sortBy: mapSortToBackend(sort),
-      filter : sp.filter || undefined
+      filter: sp.filter || undefined,
     },
     { refetchOnMountOrArgChange: true },
   );
@@ -116,12 +116,6 @@ function Shop() {
     });
   };
 
-  const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const nextQuery = searchInput.trim();
-    updateSearch({ q: nextQuery || undefined, page: 1 });
-  };
-
   const handleSortChange = (value: string) => {
     setSort(value);
     updateSearch({ sort: value, page: 1 });
@@ -142,45 +136,24 @@ function Shop() {
       </h1>
       <p className="mt-2 text-muted-foreground">{totalItems} items</p>
 
-      <form
-        onSubmit={handleSearchSubmit}
-        className="mt-6 flex flex-col gap-3 rounded-2xl border border-border/70 bg-background/70 p-4 shadow-sm md:flex-row md:items-center"
-      >
+      <form className="mt-6 flex flex-col gap-3 rounded-2xl border border-border/70 bg-background/70 p-4 shadow-sm md:flex-row md:items-center" >
         <input
           value={searchInput}
           onChange={(event) => setSearchInput(event.target.value)}
           placeholder="Search products"
           className="h-10 flex-1 rounded-full border border-border bg-background px-4 text-sm outline-none ring-0"
         />
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="submit"
-            className="h-10 rounded-full bg-brand px-4 text-sm font-medium text-brand-foreground"
-          >
-            Search
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setSearchInput("");
-              updateSearch({ q: undefined, page: 1 });
-            }}
-            className="h-10 rounded-full border border-border px-4 text-sm"
-          >
-            Clear
-          </button>
-        </div>
       </form>
 
       <div className="mt-8 flex flex-wrap items-center gap-2">
         <Link
           to="/shop"
           search={{ q: keyword || undefined, sort, filter: undefined, cat: undefined, page: 1 }}
-         className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
-                      !categorySlug
-                        ? "border-brand text-brand"
-                        : "border-border text-foreground hover:border-brand hover:text-brand"
-                    }`}
+          className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
+            !categorySlug
+              ? "border-brand text-brand"
+              : "border-border text-foreground hover:border-brand hover:text-brand"
+          }`}
         >
           All
         </Link>
@@ -196,11 +169,11 @@ function Shop() {
               category: category.slug,
               page: 1,
             }}
-               className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
-                      categorySlug === category.slug
-                        ? "border-brand text-brand"
-                        : "border-border text-foreground hover:border-brand hover:text-brand"
-                    }`}
+            className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
+              categorySlug === category.slug
+                ? "border-brand text-brand"
+                : "border-border text-foreground hover:border-brand hover:text-brand"
+            }`}
             // className="rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:border-brand hover:text-brand"
           >
             {category.name}
@@ -280,11 +253,17 @@ function Shop() {
 
 export function normalizeProduct(item: any, index: number, fallbackCategory: string): any {
   const name = String(item.name ?? item.title ?? "Untitled product");
-  const categoryName = item?.category?.name || "N/A"
+  const categoryName = item?.category?.name || "N/A";
   const category = String(categoryName);
   const discounted = item?.discountedPrice != null;
-  const price = Number( item.discountedPrice ?? item.price ?? item.salePrice ?? item.originalPrice ?? 0);
-  const compareAt = discounted ? Number(item.price ?? item.compareAt ?? 0) : item.compareAt ? Number(item.compareAt) : undefined;
+  const price = Number(
+    item.discountedPrice ?? item.price ?? item.salePrice ?? item.originalPrice ?? 0,
+  );
+  const compareAt = discounted
+    ? Number(item.price ?? item.compareAt ?? 0)
+    : item.compareAt
+      ? Number(item.compareAt)
+      : undefined;
   const subCategory = item?.subCategory?.name || "N/A";
 
   return {

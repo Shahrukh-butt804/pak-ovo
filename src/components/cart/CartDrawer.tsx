@@ -11,11 +11,13 @@ import {
 import { toast } from "sonner";
 import { UPLOADS_URL } from "@/constants/api";
 import { useRef, useState, useCallback } from "react";
+import { useSelector } from "react-redux";
+import { selectUser } from "@/redux/reducers/userSlice";
 
 export function CartDrawer() {
+  const username = useSelector(selectUser)?.fullName;
   const { open, setOpen } = useCart();
-
-  const { data: cart, isLoading } = useGetMyCartQuery({});
+  const { data: cart, isLoading } = useGetMyCartQuery({},{ skip: !username , refetchOnMountOrArgChange : true});
 
   const [updateCart, { isLoading: isUpdating }] = useUpdateCartMutation();
   const [deleteFromCart, { isLoading: isDeleting }] = useDeleteFromCartMutation();

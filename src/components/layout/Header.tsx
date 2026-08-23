@@ -22,12 +22,21 @@ export function Header() {
   const [q, setQ] = useState("");
   const username = useSelector(selectUser)?.fullName;
 
-  const { data: cart } = useGetMyCartQuery({skip:!username}, { refetchOnMountOrArgChange: true });
-  const { data: wishlist } = useGetMyWishlistQuery({skip:!username}, { refetchOnMountOrArgChange: true });
+  const { data: cart } = useGetMyCartQuery(
+    {},
+    { skip: !username, refetchOnMountOrArgChange: true },
+  );
+  const { data: wishlist } = useGetMyWishlistQuery(
+    {},
+    { skip: !username, refetchOnMountOrArgChange: true },
+  );
 
   const [logoutuser, { isLoading }] = useLogoutMutation();
 
-  const { data: categoriesResponse } = useGetAllCategoriesQuery({skip:!username}, { refetchOnMountOrArgChange: true });
+  const { data: categoriesResponse } = useGetAllCategoriesQuery(
+    { skip: !username },
+    { refetchOnMountOrArgChange: true },
+  );
 
   const categories = useMemo(
     () => (categoriesResponse?.docs ?? categoriesResponse ?? []) as any[],
@@ -49,7 +58,6 @@ export function Header() {
     if (res?.data?.success) {
       dispatch(logout());
       toast.success(res?.data?.message || "Operation successful");
-      navigate({ to: "/auth/login" });
     } else {
       toast.error(
         res?.error?.data?.message || res?.error?.data?.errors[0].msg || "something went wrong",
@@ -160,100 +168,97 @@ export function Header() {
         )}
       </div>
 
-      {username && (
-        <div className="hidden border-t border-border lg:block relative">
-          <div className="container-px mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-6 gap-y-2 py-3 text-sm font-medium xl:gap-x-8">
-            <Link to="/" className="hover:text-brand transition-colors">
-              Home
+      {/* {username && ( */}
+      <div className="hidden border-t border-border lg:block relative">
+        <div className="container-px mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-6 gap-y-2 py-3 text-sm font-medium xl:gap-x-8">
+          <Link to="/" className="hover:text-brand transition-colors">
+            Home
+          </Link>
+          <div className="group">
+            <Link to="/shop" className="flex items-center gap-1 hover:text-brand transition-colors">
+              Shop
             </Link>
-            <div className="group">
-              <Link
-                to="/shop"
-                className="flex items-center gap-1 hover:text-brand transition-colors"
-              >
-                Shop
-              </Link>
-              <MegaMenu />
-            </div>
-            {categories.map((c) => (
-              <Link
-                key={c.slug}
-                to="/collections/$slug"
-                params={{ slug: c.slug }}
-                className="hover:text-brand transition-colors"
-              >
-                {c.name}
-              </Link>
-            ))}
-            {/* <Link to="/blog" className="hover:text-brand transition-colors">
+            <MegaMenu />
+          </div>
+          {categories.map((c) => (
+            <Link
+              key={c.slug}
+              to="/collections/$slug"
+              params={{ slug: c.slug }}
+              className="hover:text-brand transition-colors"
+            >
+              {c.name}
+            </Link>
+          ))}
+          {/* <Link to="/blog" className="hover:text-brand transition-colors">
             Journal
           </Link> */}
-            <Link
-              to="/shop"
-              search={{ filter: "sale" }}
-              className="text-destructive font-semibold hover:opacity-80 transition-opacity"
-            >
-              Sale
-            </Link>
-          </div>
-        </div>
-      )}
-{createPortal(
-  <div
-    className={`fixed inset-0 z-50 lg:hidden transition-opacity duration-300 ${
-      mobileOpen ? "opacity-100" : "pointer-events-none opacity-0"
-    }`}
-  >
-    <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
-    <div
-      className={`absolute left-0 top-0 h-full w-[85%] max-w-sm overflow-y-auto bg-background p-6 transition-transform duration-300 ease-out ${
-        mobileOpen ? "translate-x-0" : "-translate-x-full"
-      }`}
-    >
-      <div className="mb-6 flex items-center justify-between">
-        <Link to="/" onClick={() => setMobileOpen(false)} className="flex items-center gap-2">
-          <img src={logo} alt="PakOvo" className="h-10 w-10 object-contain" />
-          <span className="font-display text-lg font-bold">
-            <span className="text-brand">Pak</span>
-            <span className="text-navy">Ovo</span>
-          </span>
-        </Link>
-        <button aria-label="Close" onClick={() => setMobileOpen(false)} className="p-2">
-          <X className="h-5 w-5" />
-        </button>
-      </div>
-      <nav className="space-y-1">
-        <MobileLink to="/" onClick={() => setMobileOpen(false)}>
-          Home
-        </MobileLink>
-        <MobileLink to="/shop" onClick={() => setMobileOpen(false)}>
-          Shop
-        </MobileLink>
-        {categories.map((c) => (
           <Link
-            key={c.slug}
-            to="/collections/$slug"
-            params={{ slug: c.slug }}
-            onClick={() => setMobileOpen(false)}
-            className="block rounded-lg px-3 py-3 text-base font-medium hover:bg-secondary"
+            to="/shop"
+            search={{ filter: "sale" }}
+            className="text-destructive font-semibold hover:opacity-80 transition-opacity"
           >
-            {c.name}
+            Sale
           </Link>
-        ))}
-        <MobileLink to="/wishlist" onClick={() => setMobileOpen(false)}>
-          Wishlist
-        </MobileLink>
-        <MobileLink to="/blog" onClick={() => setMobileOpen(false)}>
-          Journal
-        </MobileLink>
-        <MobileLink to="/account" onClick={() => setMobileOpen(false)}>
-          My account
-        </MobileLink>
-      </nav>
-    </div>
-  </div>,
-  document.body
-)}
+        </div>
+      </div>
+      {/* )} */}
+      {createPortal(
+        <div
+          className={`fixed inset-0 z-50 lg:hidden transition-opacity duration-300 ${
+            mobileOpen ? "opacity-100" : "pointer-events-none opacity-0"
+          }`}
+        >
+          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
+          <div
+            className={`absolute left-0 top-0 h-full w-[85%] max-w-sm overflow-y-auto bg-background p-6 transition-transform duration-300 ease-out ${
+              mobileOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
+          >
+            <div className="mb-6 flex items-center justify-between">
+              <Link to="/" onClick={() => setMobileOpen(false)} className="flex items-center gap-2">
+                <img src={logo} alt="PakOvo" className="h-10 w-10 object-contain" />
+                <span className="font-display text-lg font-bold">
+                  <span className="text-brand">Pak</span>
+                  <span className="text-navy">Ovo</span>
+                </span>
+              </Link>
+              <button aria-label="Close" onClick={() => setMobileOpen(false)} className="p-2">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <nav className="space-y-1">
+              <MobileLink to="/" onClick={() => setMobileOpen(false)}>
+                Home
+              </MobileLink>
+              <MobileLink to="/shop" onClick={() => setMobileOpen(false)}>
+                Shop
+              </MobileLink>
+              {categories.map((c) => (
+                <Link
+                  key={c.slug}
+                  to="/collections/$slug"
+                  params={{ slug: c.slug }}
+                  onClick={() => setMobileOpen(false)}
+                  className="block rounded-lg px-3 py-3 text-base font-medium hover:bg-secondary"
+                >
+                  {c.name}
+                </Link>
+              ))}
+              <MobileLink to="/wishlist" onClick={() => setMobileOpen(false)}>
+                Wishlist
+              </MobileLink>
+              <MobileLink to="/blog" onClick={() => setMobileOpen(false)}>
+                Journal
+              </MobileLink>
+              <MobileLink to="/account" onClick={() => setMobileOpen(false)}>
+                My account
+              </MobileLink>
+            </nav>
+          </div>
+        </div>,
+        document.body,
+      )}
     </header>
   );
 }
