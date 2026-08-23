@@ -48,7 +48,7 @@ export function Footer() {
             <FooterLink to="/shop">Shipping</FooterLink>
             <FooterLink to="/shop">Returns</FooterLink>
             <FooterLink to="/shop">FAQs</FooterLink>
-            <FooterLink to="/account">My account</FooterLink>
+            {/* <FooterLink to="/account">My account</FooterLink> */}
             <FooterLink to="/track">Track order</FooterLink>
             <FooterLink to="/blog">Journal</FooterLink>
           </FooterCol>

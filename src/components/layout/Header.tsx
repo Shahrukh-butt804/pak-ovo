@@ -82,16 +82,16 @@ export function Header() {
         </div>
       </div>
 
-      <div className="container-px mx-auto flex justify-between h-20 max-w-7xl items-center gap-6">
+      <div className="container-px mx-auto flex justify-between h-20 max-w-7xl items-center gap-0">
         <button
-          className="lg:hidden -ml-2 p-2"
+          className="lg:hidden -ml-2 p-1 "
           aria-label="Open menu"
           onClick={() => setMobileOpen(true)}
         >
           <Menu className="h-6 w-6" />
         </button>
 
-        <Link to="/" className="flex items-center gap-2">
+        <Link to="/" className="flex items-center  gap-2">
           <img
             src={logo}
             alt="PakOvo"
@@ -117,13 +117,6 @@ export function Header() {
         </form> */}
         {username && (
           <nav className="ml-auto flex items-center gap-1 lg:ml-2">
-            <Link
-              to="/search"
-              aria-label="Search"
-              className="lg:hidden p-2 hover:text-brand transition-colors"
-            >
-              <Search className="h-5 w-5" />
-            </Link>
             <Link
               to="/wishlist"
               aria-label="Wishlist"
@@ -236,14 +229,19 @@ export function Header() {
                   {c.name}
                 </Link>
               ))}
-              <MobileLink to="/wishlist" onClick={() => setMobileOpen(false)}>
-                Wishlist
-              </MobileLink>
+
+              {/* {username && (
+                <>
+                  <MobileLink to="/account" onClick={() => setMobileOpen(false)}>
+                    My account
+                  </MobileLink>
+                  <MobileLink to="/wishlist" onClick={() => setMobileOpen(false)}>
+                    Wishlist
+                  </MobileLink>
+                </>
+              )} */}
               <MobileLink to="/blog" onClick={() => setMobileOpen(false)}>
                 Journal
-              </MobileLink>
-              <MobileLink to="/account" onClick={() => setMobileOpen(false)}>
-                My account
               </MobileLink>
             </nav>
           </div>
