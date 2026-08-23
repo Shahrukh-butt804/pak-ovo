@@ -1,25 +1,23 @@
 import logo from "@/assets/logo.png";
 import { useCart } from "@/lib/cart-store";
-import { Link, useNavigate } from "@/lib/router-compat";
+import { Link } from "@/lib/router-compat";
 import { logout, selectUser } from "@/redux/reducers/userSlice";
 import { useLogoutMutation } from "@/redux/services/authSlice";
 import { useGetMyCartQuery } from "@/redux/services/cartSlice";
+import { useGetAllCategoriesQuery } from "@/redux/services/categorySlice";
 import { useGetMyWishlistQuery } from "@/redux/services/wishlistSlice";
 import { Heart, Menu, Search, ShoppingBag, User, X } from "lucide-react";
 import { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
 import { MegaMenu } from "./MegaMenu";
-import { useGetAllCategoriesQuery } from "@/redux/services/categorySlice";
-import { createPortal } from "react-dom";
 
 export function Header() {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
   const setCartOpen = useCart((s) => s.setOpen);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [q, setQ] = useState("");
   const username = useSelector(selectUser)?.fullName;
 
   const { data: cart } = useGetMyCartQuery(
@@ -42,13 +40,6 @@ export function Header() {
     () => (categoriesResponse?.docs ?? categoriesResponse ?? []) as any[],
     [categoriesResponse],
   );
-
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!q.trim()) return;
-    navigate({ to: "/search", search: { q } });
-    setMobileOpen(false);
-  };
 
   const handleLogout = async (ev: React.FormEvent) => {
     ev.preventDefault();
