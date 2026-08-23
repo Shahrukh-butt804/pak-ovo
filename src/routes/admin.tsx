@@ -1094,13 +1094,28 @@ const STATUS_OPTIONS = ["Pending", "confirmed", "dispatched", "delivered", "canc
 
 function mapOrder(o: any) {
   return {
-    id: o._id ?? o.id,
-    customer: `${o.shippingAddress?.firstName ?? ""} ${o.shippingAddress?.lastName ?? ""}`.trim(),
-    email: o.user?.email ?? o.email ?? "—",
+    _id: o._id ?? o.id,
+    customer:
+      `${o.shippingAddress?.firstName ?? ""} ${o.shippingAddress?.lastName ?? ""}`.trim() || "—",
+    email: o.email ?? o.user?.email ?? "—",
+    phone: o.phone ?? "—",
     date: o.createdAt ? new Date(o.createdAt).toLocaleDateString() : (o.date ?? "—"),
-    items: Array.isArray(o.products) ? o.products.length : (o.products ?? 0),
-    total: o.totalAmount ?? o.totalAmount ?? 0,
-    status: o.status,
+    items: Array.isArray(o.products) ? o.products.length : 0,
+    totalAmount: o.totalAmount ?? 0,
+    status: o.status ?? "pending",
+    products: Array.isArray(o.products) ? o.products : [],
+    shippingAddress: o.shippingAddress
+      ? {
+          firstName: o.shippingAddress.firstName ?? "N/A",
+          lastName: o.shippingAddress.lastName ?? "N/A",
+          address: o.shippingAddress.address ?? "N/A",
+          city: o.shippingAddress.city ?? "N/A",
+          country: o.shippingAddress.country ?? "N/A",
+          zipCode: o.shippingAddress.zipCode ?? "N/A",
+        }
+      : null,
+    createdAt: o.createdAt ?? null,
+    updatedAt: o.updatedAt ?? null,
   };
 }
 
@@ -1116,7 +1131,7 @@ function useDebouncedValue<T>(value: T, delay = 400) {
 export function OrdersView() {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<string>("");
-  const [openOrder, setOpenOrder] = useState<ReturnType<typeof mapOrder> | null>(null);
+  const [openOrder, setOpenOrder] = useState<ReturnType<typeof mapOrder | any> | null>(null);
 
   const [pagination, setPagination] = useState({ page: 1, limit: 10 });
   const debouncedKeyword = useDebouncedValue(q);
@@ -1154,25 +1169,108 @@ export function OrdersView() {
 
   const exportPdf = () => {
     const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text("PakOvo — Orders", 14, 16);
-    doc.setFontSize(10);
-    doc.text(new Date().toLocaleString(), 14, 22);
-    autoTable(doc, {
-      startY: 28,
-      head: [["Order", "Customer", "Email", "Date", "Items", "Total", "Status"]],
-      body: orders.map((o: any) => [
-        o.id,
-        o.customer,
-        o.email,
-        o.date,
-        o.items,
-        formatPrice(o.total),
-        o.status,
-      ]),
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [15, 27, 61] },
+
+    orders.forEach((order: any, index: number) => {
+      if (index > 0) doc.addPage()
+      doc.setFontSize(14);
+      doc.text(`Order Details — ${order._id}`, 14, 16);
+      doc.setFontSize(11);
+      doc.text("Customer Information", 14, 27);
+      autoTable(doc, {
+        startY: 31,
+        body: [
+          ["Customer", order.customer],
+          ["Email", order.email],
+          ["Phone", order.phone],
+          ["Order Date", order.date],
+          ["Status", order.status],
+          ["Total Products", String(order.items)],
+          ["Total Amount", formatPrice(order.totalAmount)],
+        ],
+        theme: "grid",
+        styles: {
+          fontSize: 8,
+          cellPadding: 3,
+        },
+        columnStyles: {
+          0: {
+            fontStyle: "bold",
+            cellWidth: 40,
+          },
+          1: {
+            cellWidth: 130,
+          },
+        },
+      });
+
+      // Shipping Address
+      const customerTableEnd = (doc as any).lastAutoTable.finalY + 8;
+      doc.setFontSize(11);
+      doc.text("Shipping Address", 14, customerTableEnd);
+      const address = order.shippingAddress;
+      autoTable(doc, {
+        startY: customerTableEnd + 4,
+        body: [
+          ["Name", `${address?.firstName ?? ""} ${address?.lastName ?? ""}`.trim() || "—"],
+          ["Address", address?.address ?? "—"],
+          ["City", address?.city ?? "—"],
+          ["Country", address?.country ?? "—"],
+          ["ZIP Code", address?.zipCode ?? "—"],
+        ],
+        theme: "grid",
+        styles: {
+          fontSize: 8,
+          cellPadding: 3,
+        },
+        columnStyles: {
+          0: {
+            fontStyle: "bold",
+            cellWidth: 40,
+          },
+          1: {
+            cellWidth: 130,
+          },
+        },
+      });
+
+      // Products
+      const addressTableEnd = (doc as any).lastAutoTable.finalY + 8;
+      doc.setFontSize(11);
+      doc.text("Products", 14, addressTableEnd);
+      autoTable(doc, {
+        startY: addressTableEnd + 4,
+        head: [["Product", "Quantity", "Price", "Subtotal"]],
+        body: (order.products || []).map((item: any) => {
+          const price = Number(item.effectivePrice || 0);
+          const quantity = Number(item.quantity || 0);
+          return [
+            item.product?.title || "Unknown Product",
+            quantity,
+            formatPrice(price),
+            formatPrice(price * quantity),
+          ];
+        }),
+        theme: "grid",
+        styles: {
+          fontSize: 8,
+          cellPadding: 3,
+        },
+        headStyles: {
+          fillColor: [15, 27, 61],
+        },
+        columnStyles: {
+          0: { cellWidth: 90 },
+          1: { cellWidth: 25 },
+          2: { cellWidth: 35 },
+          3: { cellWidth: 35 },
+        },
+      });
+
+      const productsTableEnd = (doc as any).lastAutoTable.finalY + 8;
+      doc.setFontSize(10);
+      doc.text(`Order Total: ${formatPrice(order.totalAmount)}`, 14, productsTableEnd);
     });
+
     doc.save("orders.pdf");
     toast.success(`Exported ${orders.length} orders`);
   };
@@ -1210,6 +1308,7 @@ export function OrdersView() {
             <tr>
               <th className="p-3">Order ID</th>
               <th className="p-3">Customer</th>
+              <th className="p-3">Phone</th>
               <th className="p-3">email</th>
               <th className="p-3">Date</th>
               <th className="p-3">Total</th>
@@ -1227,11 +1326,12 @@ export function OrdersView() {
             ) : (
               orders.map((o: any) => (
                 <tr key={o.id}>
-                  <td className="p-3 font-medium">{o.id}</td>
+                  <td className="p-3 font-medium">{o._id}</td>
                   <td className="p-3 text-muted-foreground">{o.customer}</td>
+                  <td className="p-3 text-muted-foreground">{o.phone}</td>
                   <td className="p-3 text-muted-foreground">{o.email}</td>
                   <td className="p-3 text-muted-foreground">{o.date}</td>
-                  <td className="p-3">{formatPrice(o.total)}</td>
+                  <td className="p-3">{formatPrice(o.totalAmount)}</td>
                   <td className="p-3">
                     <select
                       value={o.status}
@@ -1295,14 +1395,89 @@ export function OrdersView() {
       )}
 
       {openOrder && (
-        <Modal title={`Order ${openOrder.id}`} onClose={() => setOpenOrder(null)}>
-          <div className="grid gap-3 text-sm">
-            <Row label="Customer" value={openOrder.customer} />
-            <Row label="Email" value={openOrder.email} />
-            <Row label="Date" value={openOrder.date} />
-            <Row label="Items" value={String(openOrder.items)} />
-            <Row label="Total" value={formatPrice(openOrder.total)} />
-            <Row label="Status" value={<StatusBadge status={openOrder.status} />} />
+        <Modal title={`Order ${openOrder._id}`} onClose={() => setOpenOrder(null)}>
+          <div className="space-y-5 text-sm">
+            {/* Customer Information */}
+            <div>
+              <h3 className="mb-3 text-base font-semibold">Customer Information</h3>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <Row label="Email" value={openOrder.email || "-"} />
+                <Row label="Phone" value={openOrder.phone || "-"} />
+              </div>
+            </div>
+
+            {/* Shipping Address */}
+            <div>
+              <h3 className="mb-3 text-base font-semibold">Shipping Address</h3>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <Row
+                  label="Name"
+                  value={
+                    `${openOrder.shippingAddress?.firstName || ""} ${openOrder.shippingAddress?.lastName || ""}`.trim() ||
+                    "-"
+                  }
+                />
+                <Row label="Address" value={openOrder.shippingAddress?.address || "-"} />
+                <Row label="City" value={openOrder.shippingAddress?.city || "-"} />
+                <Row label="Country" value={openOrder.shippingAddress?.country || "-"} />
+                <Row label="ZIP Code" value={openOrder.shippingAddress?.zipCode || "-"} />
+              </div>
+            </div>
+
+            {/* Order Information */}
+            <div>
+              <h3 className="mb-3 text-base font-semibold">Order Information</h3>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <Row label="Date" value={new Date(openOrder.createdAt).toLocaleDateString()} />
+                <Row label="Total Amount" value={formatPrice(openOrder.totalAmount)} />
+                <Row label="Status" value={<StatusBadge status={openOrder.status} />} />
+                <Row label="Total Products" value={String(openOrder.products?.length || 0)} />
+              </div>
+            </div>
+
+            {/* Products */}
+            <div>
+              <h3 className="mb-3 text-base font-semibold">Products</h3>
+              <div className="space-y-3">
+                {openOrder.products?.map((item: any, index: number) => (
+                  <div
+                    key={item.product?._id || index}
+                    className="flex items-center justify-between gap-4 rounded-lg border p-3"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      {item.product?.image && (
+                        <img
+                          src={item.product.image}
+                          alt={item.product?.title || "Product"}
+                          className="h-14 w-14 rounded-lg object-cover"
+                        />
+                      )}
+
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">
+                          {item.product?.title || "Unknown Product"}
+                        </p>
+
+                        <p className="text-xs text-gray-500">Quantity: {item.quantity}</p>
+                      </div>
+                    </div>
+
+                    <div className="shrink-0 text-right">
+                      <p className="font-medium">{formatPrice(item.effectivePrice)}</p>
+                      <p className="text-xs text-gray-500">
+                        {formatPrice(item.effectivePrice * item.quantity)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+
+                {!openOrder.products?.length && (
+                  <p className="text-sm text-gray-500">No products found.</p>
+                )}
+              </div>
+            </div>
           </div>
         </Modal>
       )}
