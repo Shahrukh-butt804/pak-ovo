@@ -1449,7 +1449,7 @@ export function OrdersView() {
                     <div className="flex min-w-0 items-center gap-3">
                       {item.product?.image && (
                         <img
-                          src={item.product.image}
+                          src={UPLOADS_URL + item.product.image}
                           alt={item.product?.title || "Product"}
                           className="h-14 w-14 rounded-lg object-cover"
                         />
